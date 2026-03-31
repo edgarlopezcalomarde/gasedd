@@ -1,12 +1,12 @@
 export const API_BASE_URL =
   "https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes"
 
-export const MAP_STYLES = {
+export const MAP_STYLES: Record<string, string> = {
   "osm-bright": "https://tiles.openfreemap.org/styles/liberty",
   "osm-dark": "https://tiles.openfreemap.org/styles/osm-bright",
   liberty: "https://tiles.openfreemap.org/styles/liberty",
   "fiord-color": "https://tiles.openfreemap.org/styles/fiord-color",
-} as const
+}
 
 export const SPAIN_CENTER = {
   lng: -3.70379,

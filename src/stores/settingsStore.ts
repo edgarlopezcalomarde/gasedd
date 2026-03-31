@@ -5,19 +5,17 @@ export type Theme = "light" | "dark" | "system"
 export type MapStyle = "osm-bright" | "osm-dark" | "liberty" | "fiord-color"
 
 interface SettingsState {
-  theme: Theme
-  mapStyle: MapStyle
+  theme: "light" | "dark" | "system"
+  mapStyle: string
   defaultFuel: string
   tankCapacity: number
-  autoCenterCheapest: boolean
   showMaritime: boolean
 
-  setTheme: (theme: Theme) => void
-  setMapStyle: (style: MapStyle) => void
-  setDefaultFuel: (fuel: string) => void
-  setTankCapacity: (capacity: number) => void
-  setAutoCenterCheapest: (value: boolean) => void
-  setShowMaritime: (value: boolean) => void
+  setTheme: (theme: "light" | "dark" | "system") => void
+  setMapStyle: (mapStyle: string) => void
+  setDefaultFuel: (defaultFuel: string) => void
+  setTankCapacity: (tankCapacity: number) => void
+  setShowMaritime: (showMaritime: boolean) => void
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -27,15 +25,12 @@ export const useSettingsStore = create<SettingsState>()(
       mapStyle: "liberty",
       defaultFuel: "1",
       tankCapacity: 50,
-      autoCenterCheapest: true,
       showMaritime: false,
 
       setTheme: (theme) => set({ theme }),
       setMapStyle: (mapStyle) => set({ mapStyle }),
       setDefaultFuel: (defaultFuel) => set({ defaultFuel }),
       setTankCapacity: (tankCapacity) => set({ tankCapacity }),
-      setAutoCenterCheapest: (autoCenterCheapest) =>
-        set({ autoCenterCheapest }),
       setShowMaritime: (showMaritime) => set({ showMaritime }),
     }),
     {

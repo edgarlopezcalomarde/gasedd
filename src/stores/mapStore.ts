@@ -1,4 +1,5 @@
 import { create } from "zustand"
+import { persist } from "zustand/middleware"
 import type { PriceStats } from "@/lib/price-utils"
 
 export interface Viewport {
@@ -35,32 +36,44 @@ interface MapState {
   setShowLocationPrompt: (show: boolean) => void
 }
 
-export const useMapStore = create<MapState>()((set) => ({
-  viewport: {
-    lng: -3.70379,
-    lat: 40.416775,
-    zoom: 6,
-    bearing: 0,
-    pitch: 0,
-  },
-  bounds: null,
-  selectedStationId: null,
-  isBlocked: false,
-  viewStats: null,
-  visibleProvinces: [],
-  userLocation: null,
-  showRoute: false,
-  routeToStationId: null,
-  showLocationPrompt: false,
+export const useMapStore = create<MapState>()(
+  persist(
+    (set) => ({
+      viewport: {
+        lng: -3.70379,
+        lat: 40.416775,
+        zoom: 6,
+        bearing: 0,
+        pitch: 0,
+      },
+      bounds: null,
+      selectedStationId: null,
+      isBlocked: false,
+      viewStats: null,
+      visibleProvinces: [],
+      userLocation: null,
+      showRoute: false,
+      routeToStationId: null,
+      showLocationPrompt: false,
 
-  setViewport: (viewport) => set({ viewport }),
-  setBounds: (bounds) => set({ bounds }),
-  setSelectedStation: (selectedStationId) => set({ selectedStationId }),
-  setBlocked: (isBlocked) => set({ isBlocked }),
-  setViewStats: (viewStats) => set({ viewStats }),
-  setVisibleProvinces: (visibleProvinces) => set({ visibleProvinces }),
-  setUserLocation: (userLocation) => set({ userLocation }),
-  setShowRoute: (showRoute) => set({ showRoute }),
-  setRouteToStationId: (routeToStationId) => set({ routeToStationId }),
-  setShowLocationPrompt: (showLocationPrompt) => set({ showLocationPrompt }),
-}))
+      setViewport: (viewport) => set({ viewport }),
+      setBounds: (bounds) => set({ bounds }),
+      setSelectedStation: (selectedStationId) => set({ selectedStationId }),
+      setBlocked: (isBlocked) => set({ isBlocked }),
+      setViewStats: (viewStats) => set({ viewStats }),
+      setVisibleProvinces: (visibleProvinces) => set({ visibleProvinces }),
+      setUserLocation: (userLocation) => set({ userLocation }),
+      setShowRoute: (showRoute) => set({ showRoute }),
+      setRouteToStationId: (routeToStationId) => set({ routeToStationId }),
+      setShowLocationPrompt: (showLocationPrompt) =>
+        set({ showLocationPrompt }),
+    }),
+    {
+      name: "gasedd-map-storage",
+      partialize: (state) => ({
+        userLocation: state.userLocation,
+        viewport: state.viewport,
+      }),
+    }
+  )
+)
