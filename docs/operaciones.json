@@ -1,0 +1,152 @@
+[
+  {
+    "uri": "EstacionesTerrestres/",
+    "metodo": "GET",
+    "descripcion": "Servicio en https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/EstacionesTerrestres/"
+  },
+  {
+    "uri": "EstacionesTerrestres/FiltroCCAA/{IDCCAA}",
+    "metodo": "GET",
+    "descripcion": "Servicio en https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/EstacionesTerrestres/FiltroCCAA/{IDCCAA}"
+  },
+  {
+    "uri": "EstacionesTerrestres/FiltroCCAAProducto/{IDCCAA}/{IDProducto}",
+    "metodo": "GET",
+    "descripcion": "Servicio en https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/EstacionesTerrestres/FiltroCCAAProducto/{IDCCAA}/{IDPRODUCTO}"
+  },
+  {
+    "uri": "EstacionesTerrestres/FiltroMunicipio/{IDMunicipio}",
+    "metodo": "GET",
+    "descripcion": "Servicio en https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/EstacionesTerrestres/FiltroMunicipio/{IDMUNICIPIO}"
+  },
+  {
+    "uri": "EstacionesTerrestres/FiltroMunicipioProducto/{IDMunicipio}/{IDProducto}",
+    "metodo": "GET",
+    "descripcion": "Servicio en https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/EstacionesTerrestres/FiltroMunicipioProducto/{IDMUNICIPIO}/{IDPRODUCTO}"
+  },
+  {
+    "uri": "EstacionesTerrestres/FiltroProducto/{IDProducto}",
+    "metodo": "GET",
+    "descripcion": "Servicio en https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/EstacionesTerrestres/FiltroProducto/{IDPRODUCTO}"
+  },
+  {
+    "uri": "EstacionesTerrestres/FiltroProvincia/{IDProvincia}",
+    "metodo": "GET",
+    "descripcion": "Servicio en https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/EstacionesTerrestres/FiltroProvincia/{IDPROVINCIA}"
+  },
+  {
+    "uri": "EstacionesTerrestres/FiltroProvinciaProducto/{IDProvincia}/{IDProducto}",
+    "metodo": "GET",
+    "descripcion": "Servicio en https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/EstacionesTerrestres/FiltroProvinciaProducto/{IDPROVINCIA}/{IDPRODUCTO}"
+  },
+  {
+    "uri": "EstacionesTerrestresHist/{FECHA}",
+    "metodo": "GET",
+    "descripcion": "Servicio en https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/EstacionesTerrestresHist/{FECHA}"
+  },
+  {
+    "uri": "EstacionesTerrestresHist/FiltroCCAA/{FECHA}/{IDCCAA}",
+    "metodo": "GET",
+    "descripcion": "Servicio en https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/EstacionesTerrestresHist/FiltroCCAA/{FECHA}/{IDCCAA}"
+  },
+  {
+    "uri": "EstacionesTerrestresHist/FiltroCCAAProducto/{FECHA}/{IDCCAA}/{IDProducto}",
+    "metodo": "GET",
+    "descripcion": "Servicio en https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/EstacionesTerrestresHist/FiltroCCAAProducto/{FECHA}/{IDCCAA}/{IDPRODUCTO}"
+  },
+  {
+    "uri": "EstacionesTerrestresHist/FiltroMunicipio/{FECHA}/{IDMunicipio}",
+    "metodo": "GET",
+    "descripcion": "Servicio en https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/EstacionesTerrestresHist/FiltroMunicipio/{FECHA}/{IDMUNICIPIO}"
+  },
+  {
+    "uri": "EstacionesTerrestresHist/FiltroMunicipioProducto/{FECHA}/{IDMunicipio}/{IDProducto}",
+    "metodo": "GET",
+    "descripcion": "Servicio en https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/EstacionesTerrestresHist/FiltroMunicipioProducto/{FECHA}/{IDMUNICIPIO}/{IDPRODUCTO}"
+  },
+  {
+    "uri": "EstacionesTerrestresHist/FiltroProducto/{FECHA}/{IDProducto}",
+    "metodo": "GET",
+    "descripcion": "Servicio en https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/EstacionesTerrestresHist/FiltroProducto/{FECHA}/{IDPRODUCTO}"
+  },
+  {
+    "uri": "EstacionesTerrestresHist/FiltroProvincia/{FECHA}/{IDProvincia}",
+    "metodo": "GET",
+    "descripcion": "Servicio en https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/EstacionesTerrestresHist/FiltroProvincia/{FECHA}/{IDPROVINCIA}"
+  },
+  {
+    "uri": "EstacionesTerrestresHist/FiltroProvinciaProducto/{FECHA}/{IDProvincia}/{IDProducto}",
+    "metodo": "GET",
+    "descripcion": "Servicio en https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/EstacionesTerrestresHist/FiltroProvinciaProducto/{FECHA}/{IDPROVINCIA}/{IDPRODUCTO}"
+  },
+  {
+    "uri": "Listados/ComunidadesAutonomas/",
+    "metodo": "GET",
+    "descripcion": "Servicio en https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/Listados/ComunidadesAutonomas/"
+  },
+  {
+    "uri": "Listados/Municipios/",
+    "metodo": "GET",
+    "descripcion": "Servicio en https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/Listados/Municipios/"
+  },
+  {
+    "uri": "Listados/MunicipiosPorProvincia/{IDProvincia}",
+    "metodo": "GET",
+    "descripcion": "Servicio en https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/Listados/MunicipiosPorProvincia/{IDPROVINCIA}"
+  },
+  {
+    "uri": "Listados/ProductosPetroliferos/",
+    "metodo": "GET",
+    "descripcion": "Servicio en https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/Listados/ProductosPetroliferos/"
+  },
+  {
+    "uri": "Listados/Provincias/",
+    "metodo": "GET",
+    "descripcion": "Servicio en https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/Listados/Provincias/"
+  },
+  {
+    "uri": "Listados/ProvinciasPorComunidad/{IDCCAA}",
+    "metodo": "GET",
+    "descripcion": "Servicio en https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/Listados/ProvinciasPorComunidad/{IDCCAA}"
+  },
+  {
+    "uri": "PostesMaritimos/",
+    "metodo": "GET",
+    "descripcion": "Servicio en https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/PostesMaritimos/"
+  },
+  {
+    "uri": "PostesMaritimos/FiltroCCAA/{IDCCAA}",
+    "metodo": "GET",
+    "descripcion": "Servicio en https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/PostesMaritimos/FiltroCCAA/{IDCCAA}"
+  },
+  {
+    "uri": "PostesMaritimos/FiltroCCAAProducto/{IDCCAA}/{IDProducto}",
+    "metodo": "GET",
+    "descripcion": "Servicio en https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/PostesMaritimos/FiltroCCAAProducto/{IDCCAA}/{IDPRODUCTO}"
+  },
+  {
+    "uri": "PostesMaritimos/FiltroMunicipio/{IDMunicipio}",
+    "metodo": "GET",
+    "descripcion": "Servicio en https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/PostesMaritimos/FiltroMunicipio/{IDMUNICIPIO}"
+  },
+  {
+    "uri": "PostesMaritimos/FiltroMunicipioProducto/{IDMunicipio}/{IDProducto}",
+    "metodo": "GET",
+    "descripcion": "Servicio en https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/PostesMaritimos/FiltroMunicipioProducto/{IDMUNICIPIO}/{IDPRODUCTO}"
+  },
+  {
+    "uri": "PostesMaritimos/FiltroProducto/{IDProducto}",
+    "metodo": "GET",
+    "descripcion": "Servicio en https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/PostesMaritimos/FiltroProducto/{IDPRODUCTO}"
+  },
+  {
+    "uri": "PostesMaritimos/FiltroProvincia/{IDProvincia}",
+    "metodo": "GET",
+    "descripcion": "Servicio en https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/PostesMaritimos/FiltroProvincia/{IDPROVINCIA}"
+  },
+  {
+    "uri": "PostesMaritimos/FiltroProvinciaProducto/{IDProvincia}/{IDProducto}",
+    "metodo": "GET",
+    "descripcion": "Servicio en https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/PostesMaritimos/FiltroProvinciaProducto/{IDPROVINCIA}/{IDPRODUCTO}"
+  }
+]
