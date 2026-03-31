@@ -1,6 +1,6 @@
 import { motion } from "motion/react"
 import { cn } from "@/lib/utils"
-import { MapPin, Settings, Calculator, History } from "lucide-react"
+import { MapPin, Settings, Calculator } from "lucide-react"
 import type { ReactNode } from "react"
 
 interface TabItem {
@@ -85,11 +85,6 @@ export const DEFAULT_TABS: TabItem[] = [
     id: "calculator",
     icon: <Calculator size={20} />,
     label: "Calculadora",
-  },
-  {
-    id: "history",
-    icon: <History size={20} />,
-    label: "Historial",
   },
   {
     id: "settings",

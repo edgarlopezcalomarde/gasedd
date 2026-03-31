@@ -69,11 +69,13 @@ const ALL_PROVINCE_IDS = [
 interface ControlPanelProps {
   className?: string
   onOpenStationDetail?: (stationId: string) => void
+  onCenterOnStation?: (stationId: string) => void
 }
 
 export function GasStationControlPanel({
   className,
   onOpenStationDetail,
+  onCenterOnStation,
 }: ControlPanelProps) {
   const stationsQuery = useStationsByProvinces(ALL_PROVINCE_IDS)
   const { cheapestStationId, expensiveStationId } = useStationStore()
@@ -131,7 +133,16 @@ export function GasStationControlPanel({
 
             <div className="h-8 w-px bg-white/10" />
 
-            <div className="text-center">
+            <button
+              className="text-center transition-colors hover:opacity-80"
+              onClick={() => {
+                if (cheapestStationId) {
+                  onCenterOnStation?.(cheapestStationId)
+                  onOpenStationDetail?.(cheapestStationId)
+                }
+              }}
+              disabled={!cheapestStationId}
+            >
               <div className="flex items-center gap-1 text-2xl font-bold text-green-400 tabular-nums">
                 <TrendingDown size={16} />
                 {viewStats?.min.toFixed(3) || "--"}
@@ -139,11 +150,20 @@ export function GasStationControlPanel({
               <div className="mt-0.5 text-[10px] tracking-wider text-white/40 uppercase">
                 más barato
               </div>
-            </div>
+            </button>
 
             <div className="h-8 w-px bg-white/10" />
 
-            <div className="text-center">
+            <button
+              className="text-center transition-colors hover:opacity-80"
+              onClick={() => {
+                if (expensiveStationId) {
+                  onCenterOnStation?.(expensiveStationId)
+                  onOpenStationDetail?.(expensiveStationId)
+                }
+              }}
+              disabled={!expensiveStationId}
+            >
               <div className="flex items-center gap-1 text-2xl font-bold text-red-400 tabular-nums">
                 <TrendingUp size={16} />
                 {viewStats?.max.toFixed(3) || "--"}
@@ -151,16 +171,19 @@ export function GasStationControlPanel({
               <div className="mt-0.5 text-[10px] tracking-wider text-white/40 uppercase">
                 más caro
               </div>
-            </div>
+            </button>
           </div>
 
           <div className="flex gap-2">
             <motion.button
               className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-yellow-500/15 py-2.5 text-sm font-medium text-yellow-400 transition-colors hover:bg-yellow-500/25"
               whileTap={{ scale: 0.96 }}
-              onClick={() =>
-                cheapestStationId && onOpenStationDetail?.(cheapestStationId)
-              }
+              onClick={() => {
+                if (cheapestStationId) {
+                  onCenterOnStation?.(cheapestStationId)
+                  onOpenStationDetail?.(cheapestStationId)
+                }
+              }}
               disabled={!cheapestStationId}
             >
               <Star size={14} />
@@ -180,9 +203,12 @@ export function GasStationControlPanel({
             <motion.button
               className="flex items-center justify-center rounded-xl bg-white/5 px-3 py-2.5 text-white/50 transition-colors hover:bg-white/10 hover:text-white"
               whileTap={{ scale: 0.96 }}
-              onClick={() =>
-                expensiveStationId && onOpenStationDetail?.(expensiveStationId)
-              }
+              onClick={() => {
+                if (expensiveStationId) {
+                  onCenterOnStation?.(expensiveStationId)
+                  onOpenStationDetail?.(expensiveStationId)
+                }
+              }}
               disabled={!expensiveStationId}
             >
               <Fuel size={14} />

@@ -1,4 +1,5 @@
-import { motion, AnimatePresence } from "motion/react"
+import { motion } from "motion/react"
+import { createPortal } from "react-dom"
 import { cn } from "@/lib/utils"
 import { FUEL_TYPES, type FuelType } from "@/lib/fuel-types"
 import { useFilterStore } from "@/stores/filterStore"
@@ -12,7 +13,12 @@ interface FuelSelectorProps {
 
 export function FuelSelector({ className }: FuelSelectorProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const [position, setPosition] = useState<{
+    top: number
+    left: number
+  } | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const portalRef = useRef<HTMLDivElement>(null)
   const { selectedFuel, setSelectedFuel } = useFilterStore()
   const { setDefaultFuel } = useSettingsStore()
 
@@ -20,9 +26,12 @@ export function FuelSelector({ className }: FuelSelectorProps) {
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node
       if (
         containerRef.current &&
-        !containerRef.current.contains(event.target as Node)
+        !containerRef.current.contains(target) &&
+        portalRef.current &&
+        !portalRef.current.contains(target)
       ) {
         setIsOpen(false)
       }
@@ -30,6 +39,14 @@ export function FuelSelector({ className }: FuelSelectorProps) {
     document.addEventListener("mousedown", handleClickOutside)
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
+
+  const handleToggle = () => {
+    if (!isOpen && containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect()
+      setPosition({ top: rect.top, left: rect.left })
+    }
+    setIsOpen(!isOpen)
+  }
 
   const handleSelect = (fuel: FuelType) => {
     setSelectedFuel(fuel.id)
@@ -40,7 +57,7 @@ export function FuelSelector({ className }: FuelSelectorProps) {
   return (
     <div ref={containerRef} className={cn("relative", className)}>
       <motion.button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={handleToggle}
         className="flex items-center gap-2 rounded-xl bg-white/5 px-3 py-2 text-sm text-white transition-colors hover:bg-white/10"
         whileTap={{ scale: 0.98 }}
       >
@@ -54,16 +71,22 @@ export function FuelSelector({ className }: FuelSelectorProps) {
         </motion.div>
       </motion.button>
 
-      <AnimatePresence>
-        {isOpen && (
+      {isOpen &&
+        position &&
+        createPortal(
           <motion.div
+            ref={portalRef}
             initial={{ opacity: 0, y: -8, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            className="absolute bottom-full left-0 mb-2 w-56 overflow-hidden rounded-xl border border-white/10 bg-black/80 shadow-2xl backdrop-blur-xl"
+            className="fixed z-[200] w-56 overflow-hidden rounded-xl border border-white/10 bg-black/90 shadow-2xl backdrop-blur-xl"
+            style={{
+              top: position.top - 8,
+              left: position.left,
+            }}
           >
-            <div className="max-h-64 overflow-y-auto p-1">
+            <div className="max-h-48 overflow-y-auto p-1">
               {FUEL_TYPES.map((fuel) => (
                 <motion.button
                   key={fuel.id}
@@ -88,9 +111,9 @@ export function FuelSelector({ className }: FuelSelectorProps) {
                 </motion.button>
               ))}
             </div>
-          </motion.div>
+          </motion.div>,
+          document.body
         )}
-      </AnimatePresence>
     </div>
   )
 }

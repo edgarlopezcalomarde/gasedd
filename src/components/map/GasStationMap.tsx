@@ -219,7 +219,6 @@ function MapUpdater() {
   const { setCheapestStation, setExpensiveStation } = useStationStore()
   const stationsQuery = useStationsByProvinces(ALL_PROVINCE_IDS)
   const { selectedFuel } = useFilterStore()
-  const settingsStore = useSettingsStore()
 
   const fuelKey = getFuelTypeById(selectedFuel || "")?.key || DEFAULT_FUEL_KEY
 
@@ -269,24 +268,12 @@ function MapUpdater() {
 
     setCheapestStation(cheapest?.IDEESS ?? null)
     setExpensiveStation(expensive?.IDEESS ?? null)
-
-    if (!isBlocked && settingsStore.autoCenterCheapest && cheapest) {
-      map.flyTo({
-        center: [
-          parseFloat(cheapest["Longitud (WGS84)"].replace(",", ".")),
-          parseFloat(cheapest.Latitud.replace(",", ".")),
-        ],
-        zoom: 14,
-        duration: 1000,
-      })
-    }
   }, [
     stationsQuery.data,
     fuelKey,
     isLoaded,
     map,
     isBlocked,
-    settingsStore.autoCenterCheapest,
     setCheapestStation,
     setExpensiveStation,
   ])
@@ -409,14 +396,16 @@ function StationMarkersLayer({
   }, [stationsInView, fuelKey, setViewStats])
 
   useEffect(() => {
-    if (!stationsQuery.data || stationsQuery.data.length === 0) return
+    if (!stationsInView || stationsInView.length === 0) return
 
-    const cheapest = findCheapestStation(stationsQuery.data, fuelKey)
-    const expensive = findExpensiveStation(stationsQuery.data, fuelKey)
+    const cheapest = findCheapestStation(stationsInView, fuelKey)
+    const expensive = findExpensiveStation(stationsInView, fuelKey)
 
     setCheapestStation(cheapest?.IDEESS ?? null)
     setExpensiveStation(expensive?.IDEESS ?? null)
-  }, [stationsQuery.data, fuelKey, setCheapestStation, setExpensiveStation])
+  }, [stationsInView, fuelKey, setCheapestStation, setExpensiveStation])
+
+  const hasSelectedFuel = !!selectedFuel
 
   if (!isLoaded || !showMarkers || visibleProvinceIds.length === 0) return null
 
@@ -464,6 +453,8 @@ function StationMarkersLayer({
             ? "h-4 w-4"
             : "h-0 w-0"
 
+        const displayPrice = hasSelectedFuel ? price : (stats?.mean ?? null)
+
         return (
           <MapMarker
             key={station.IDEESS}
@@ -489,17 +480,29 @@ function StationMarkersLayer({
                     />
                   )}
                 </div>
-                <div
-                  className={cn(
-                    "absolute rounded bg-white px-1.5 py-0.5 text-[10px] font-bold whitespace-nowrap shadow",
-                    isCheapest || isExpensive
-                      ? "-top-8 left-1/2 -translate-x-1/2"
-                      : "-top-6 left-1/2 -translate-x-1/2"
-                  )}
-                  style={{ color }}
-                >
-                  {price !== null ? `${price.toFixed(2)}€` : "--"}
-                </div>
+                {hasSelectedFuel && displayPrice !== null && (
+                  <div
+                    className={cn(
+                      "absolute rounded bg-white px-1.5 py-0.5 text-[10px] font-bold whitespace-nowrap shadow",
+                      isCheapest || isExpensive
+                        ? "-top-8 left-1/2 -translate-x-1/2"
+                        : "-top-6 left-1/2 -translate-x-1/2"
+                    )}
+                    style={{ color }}
+                  >
+                    {displayPrice.toFixed(2)}€
+                  </div>
+                )}
+                {!hasSelectedFuel && stats?.mean && (
+                  <div
+                    className={cn(
+                      "absolute rounded bg-white px-1.5 py-0.5 text-[10px] font-bold whitespace-nowrap shadow",
+                      "-top-6 left-1/2 -translate-x-1/2"
+                    )}
+                  >
+                    {stats.mean.toFixed(2)}€*
+                  </div>
+                )}
               </div>
             </MarkerContent>
           </MapMarker>
@@ -515,7 +518,11 @@ interface GasStationMapProps {
 
 export function GasStationMap({ className }: GasStationMapProps) {
   const { mapStyle, theme: settingsTheme } = useSettingsStore()
-  const { setShowLocationPrompt, userLocation } = useMapStore()
+  const {
+    setShowLocationPrompt,
+    userLocation,
+    viewport: storedViewport,
+  } = useMapStore()
   const {
     loading: locationLoading,
     permission,
@@ -524,6 +531,18 @@ export function GasStationMap({ className }: GasStationMapProps) {
 
   const [showPermission, setShowPermission] = useState(true)
   const [hasAskedPermission, setHasAskedPermission] = useState(false)
+
+  useEffect(() => {
+    const savedLocation = useMapStore.getState().userLocation
+    if (savedLocation) {
+      setHasAskedPermission(true)
+      useMapStore.getState().setViewport({
+        lng: savedLocation.lng,
+        lat: savedLocation.lat,
+        zoom: 12,
+      })
+    }
+  }, [])
 
   const mapStyleUrl = MAP_STYLES[mapStyle] || MAP_STYLES["liberty"]
   const theme = settingsTheme === "system" ? undefined : settingsTheme
@@ -541,23 +560,19 @@ export function GasStationMap({ className }: GasStationMapProps) {
             lng: coords.longitude,
             lat: coords.latitude,
           })
-          const provinceId = findProvinceByCoords(
-            coords.latitude,
-            coords.longitude
-          )
-          if (provinceId) {
-            useMapStore.getState().setViewport({
-              lng: coords.longitude,
-              lat: coords.latitude,
-              zoom: 12,
-            })
-          }
+          useMapStore.getState().setViewport({
+            lng: coords.longitude,
+            lat: coords.latitude,
+            zoom: 12,
+          })
           setShowPermission(false)
           setShowLocationPrompt(false)
+          setHasAskedPermission(true)
         })
         .catch(() => {
           setShowPermission(false)
           setShowLocationPrompt(false)
+          setHasAskedPermission(true)
         })
     } else if (
       (permission === "unknown" || permission === "prompt") &&
@@ -565,27 +580,12 @@ export function GasStationMap({ className }: GasStationMapProps) {
     ) {
       setShowPermission(true)
       setShowLocationPrompt(true)
+      setHasAskedPermission(true)
     } else if (permission === "denied") {
       setShowPermission(false)
       setShowLocationPrompt(false)
     }
   }, [permission, hasAskedPermission, requestLocation, setShowLocationPrompt])
-
-  useEffect(() => {
-    if (userLocation && permission === "granted") {
-      const provinceId = findProvinceByCoords(
-        userLocation.lat,
-        userLocation.lng
-      )
-      if (provinceId) {
-        useMapStore.getState().setViewport({
-          lng: userLocation.lng,
-          lat: userLocation.lat,
-          zoom: 12,
-        })
-      }
-    }
-  }, [userLocation, permission])
 
   const handleLocationGranted = (coords: {
     latitude: number
@@ -622,8 +622,14 @@ export function GasStationMap({ className }: GasStationMapProps) {
 
   const initialCenter: [number, number] = userLocation
     ? [userLocation.lng, userLocation.lat]
-    : [-3.70379, 40.416775]
-  const initialZoom = userLocation ? 12 : 6
+    : storedViewport
+      ? [storedViewport.lng, storedViewport.lat]
+      : [-3.70379, 40.416775]
+  const initialZoom = userLocation
+    ? 12
+    : storedViewport
+      ? storedViewport.zoom
+      : 6
 
   return (
     <div className={cn("relative h-full w-full", className)}>
