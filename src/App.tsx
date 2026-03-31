@@ -6,10 +6,9 @@ import { NavigationBar, DEFAULT_TABS } from "@/components/ui/navigation-bar"
 import { FiltersPanel } from "@/components/filters/FuelSelector"
 import { StationDetail } from "@/components/station/StationDetail"
 import { FuelCalculator } from "@/components/calculator/FuelCalculator"
-import { SetupScreen } from "@/components/setup/SetupScreen"
 import { useStationsByProvinces } from "@/hooks/useStationsByProvince"
-import { useMapStore, useFilterStore } from "@/stores"
-import { Settings as SettingsIcon, RotateCcw, X } from "lucide-react"
+import { useMapStore } from "@/stores"
+import { Settings as SettingsIcon, X } from "lucide-react"
 
 const ALL_PROVINCE_IDS = [
   "01",
@@ -70,7 +69,6 @@ export function App() {
   const [activeTab, setActiveTab] = useState("map")
   const stationsQuery = useStationsByProvinces(ALL_PROVINCE_IDS)
   const { selectedStationId, setSelectedStation } = useMapStore()
-  const { hasCompletedSetup, setHasCompletedSetup } = useFilterStore()
 
   const selectedStation = useMemo(() => {
     if (!selectedStationId || !stationsQuery.data) return null
@@ -84,18 +82,6 @@ export function App() {
     if (activeTab === "stations") {
       setActiveTab("map")
     }
-  }
-
-  const handleSetupComplete = () => {
-    setHasCompletedSetup(true)
-  }
-
-  const handleSetupSkip = () => {
-    setHasCompletedSetup(false)
-  }
-
-  const handleResetSetup = () => {
-    setHasCompletedSetup(false)
   }
 
   const renderContent = () => {
@@ -114,13 +100,6 @@ export function App() {
               <h3 className="text-lg font-semibold text-white">Ajustes</h3>
             </div>
             <FiltersPanel />
-            <button
-              onClick={handleResetSetup}
-              className="flex w-full items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/70 transition-colors hover:bg-white/10 hover:text-white"
-            >
-              <RotateCcw size={16} />
-              <span>Reiniciar configuración inicial</span>
-            </button>
           </div>
         )
       default:
@@ -130,12 +109,6 @@ export function App() {
           </div>
         )
     }
-  }
-
-  if (!hasCompletedSetup) {
-    return (
-      <SetupScreen onComplete={handleSetupComplete} onSkip={handleSetupSkip} />
-    )
   }
 
   const showBottomSheet = activeTab !== "map" && activeTab !== "stations"

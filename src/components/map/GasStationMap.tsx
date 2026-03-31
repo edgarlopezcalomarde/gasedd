@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react"
+import { motion } from "motion/react"
 import {
   Map,
   MapControls,
@@ -101,40 +102,56 @@ function LocationPermission({
   }
 
   return (
-    <div className="absolute inset-0 z-30 flex items-center justify-center bg-background/95">
-      <div className="flex max-w-md flex-col items-center gap-6 p-8 text-center">
-        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
-          <MapPin className="h-10 w-10 text-primary" />
+    <motion.div
+      className="absolute inset-0 z-30 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+    >
+      <motion.div
+        className="mx-4 w-full max-w-sm overflow-hidden rounded-2xl border border-white/10 bg-black/90 p-6 shadow-2xl backdrop-blur-2xl"
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ type: "spring", damping: 20, stiffness: 300 }}
+      >
+        <div className="mb-6 flex justify-center">
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-yellow-500/20">
+            <MapPin className="h-8 w-8 text-yellow-400" />
+          </div>
         </div>
-        <div className="space-y-2">
-          <h2 className="text-2xl font-semibold">¿Dónde estás?</h2>
-          <p className="text-muted-foreground">
+
+        <div className="mb-6 text-center">
+          <h2 className="mb-2 text-xl font-semibold text-white">
+            ¿Dónde estás?
+          </h2>
+          <p className="text-sm text-white/50">
             Para mostrarte las gasolineras más cercanas, necesitamos acceso a tu
             ubicación.
           </p>
         </div>
-        <div className="flex gap-3">
-          <button
-            onClick={onDenied}
-            className="rounded-lg border bg-transparent px-4 py-2 text-sm hover:bg-muted"
-          >
-            Ahora no
-          </button>
+
+        <div className="flex flex-col gap-3">
           <button
             onClick={handleAllow}
             disabled={loading}
-            className="rounded-lg bg-primary px-4 py-2 text-sm text-primary-foreground hover:bg-primary/90"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-yellow-500 py-3 text-sm font-medium text-black transition-colors hover:bg-yellow-400 disabled:opacity-50"
           >
             {loading ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <Navigation className="mr-2 h-4 w-4" />
+              <Navigation className="h-4 w-4" />
             )}
             Permitir ubicación
           </button>
+
+          <button
+            onClick={onDenied}
+            className="flex w-full items-center justify-center rounded-xl border border-white/10 bg-white/5 py-3 text-sm text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+          >
+            Ahora no
+          </button>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   )
 }
 
