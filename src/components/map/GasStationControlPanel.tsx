@@ -6,9 +6,9 @@ import {
   Fuel,
   TrendingDown,
   TrendingUp,
-  Navigation,
   Loader2,
   Route,
+  Star,
 } from "lucide-react"
 
 const ALL_PROVINCE_IDS = [
@@ -77,23 +77,12 @@ export function GasStationControlPanel({
 }: ControlPanelProps) {
   const stationsQuery = useStationsByProvinces(ALL_PROVINCE_IDS)
   const { cheapestStationId, expensiveStationId } = useStationStore()
-  const {
-    viewStats,
-    userLocation,
-    showRoute,
-    setShowRoute,
-    setRouteToStationId,
-  } = useMapStore()
+  const { viewStats, userLocation, setRouteToStationId } = useMapStore()
 
   const handleShowRoute = () => {
     if (cheapestStationId && userLocation) {
       setRouteToStationId(cheapestStationId)
-      setShowRoute(true)
     }
-  }
-
-  const handleToggleRoute = () => {
-    setShowRoute(!showRoute)
   }
 
   return (
@@ -167,6 +156,18 @@ export function GasStationControlPanel({
 
           <div className="flex gap-2">
             <motion.button
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-yellow-500/15 py-2.5 text-sm font-medium text-yellow-400 transition-colors hover:bg-yellow-500/25"
+              whileTap={{ scale: 0.96 }}
+              onClick={() =>
+                cheapestStationId && onOpenStationDetail?.(cheapestStationId)
+              }
+              disabled={!cheapestStationId}
+            >
+              <Star size={14} />
+              <span>Más barato</span>
+            </motion.button>
+
+            <motion.button
               className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-green-500/15 py-2.5 text-sm font-medium text-green-400 transition-colors hover:bg-green-500/25"
               whileTap={{ scale: 0.96 }}
               onClick={handleShowRoute}
@@ -174,21 +175,6 @@ export function GasStationControlPanel({
             >
               <Route size={14} />
               <span>Ruta</span>
-            </motion.button>
-
-            <motion.button
-              className={cn(
-                "flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-medium transition-colors",
-                showRoute
-                  ? "bg-green-500/20 text-green-400"
-                  : "bg-white/5 text-white/50 hover:bg-white/10 hover:text-white"
-              )}
-              whileTap={{ scale: 0.96 }}
-              onClick={handleToggleRoute}
-              disabled={!userLocation}
-            >
-              <Navigation size={14} />
-              <span>{showRoute ? "Ocultar" : "Navegar"}</span>
             </motion.button>
 
             <motion.button

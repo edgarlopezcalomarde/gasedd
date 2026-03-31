@@ -15,7 +15,8 @@ import {
   Clock,
   Fuel,
   Navigation,
-  Lock,
+  Share2,
+  ExternalLink,
   TrendingDown,
   TrendingUp,
 } from "lucide-react"
@@ -68,6 +69,36 @@ export function StationDetail({
     if (allPrices.length === 0) return null
     return Math.min(...allPrices.map((p) => p.price!))
   }, [allPrices])
+
+  const stationCoords = useMemo(() => {
+    if (!station) return null
+    const lng = parseFloat(
+      station["Longitud (WGS84)"]?.replace(",", ".") || "0"
+    )
+    const lat = parseFloat(station.Latitud?.replace(",", ".") || "0")
+    if (isNaN(lng) || isNaN(lat)) return null
+    return { lng, lat }
+  }, [station])
+
+  const googleMapsUrl = stationCoords
+    ? `https://www.google.com/maps/dir/?api=1&destination=${stationCoords.lat},${stationCoords.lng}`
+    : ""
+  const appleMapsUrl = stationCoords
+    ? `http://maps.apple.com/?daddr=${stationCoords.lat},${stationCoords.lng}`
+    : ""
+  const wazeUrl = stationCoords
+    ? `https://www.waze.com/ul?ll=${stationCoords.lat},${stationCoords.lng}&navigate=yes`
+    : ""
+
+  const handleShare = async () => {
+    if (!station) return
+    const text = `${station.Rótulo}\n${station.Dirección}\nPrecio: ${currentPrice?.toFixed(3)} €/L`
+    if (navigator.share) {
+      await navigator.share({ text })
+    } else {
+      await navigator.clipboard.writeText(text)
+    }
+  }
 
   if (!station) return null
 
@@ -198,10 +229,55 @@ export function StationDetail({
                 </AnimatePresence>
               </div>
 
+              <div className="mb-4 grid grid-cols-4 gap-2">
+                <motion.a
+                  href={googleMapsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex flex-col items-center gap-1 rounded-xl bg-white/5 py-2.5 text-xs text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <Navigation size={16} />
+                  <span>Google</span>
+                </motion.a>
+
+                <motion.a
+                  href={appleMapsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex flex-col items-center gap-1 rounded-xl bg-white/5 py-2.5 text-xs text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <ExternalLink size={16} />
+                  <span>Apple</span>
+                </motion.a>
+
+                <motion.a
+                  href={wazeUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex flex-col items-center gap-1 rounded-xl bg-white/5 py-2.5 text-xs text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <ExternalLink size={16} />
+                  <span>Waze</span>
+                </motion.a>
+
+                <motion.button
+                  onClick={handleShare}
+                  className="flex flex-col items-center gap-1 rounded-xl bg-white/5 py-2.5 text-xs text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <Share2 size={16} />
+                  <span>Compartir</span>
+                </motion.button>
+              </div>
+
               <div className="flex gap-2">
                 <motion.button
                   className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-green-500/15 py-2.5 text-sm font-medium text-green-400 transition-colors hover:bg-green-500/25"
                   whileTap={{ scale: 0.98 }}
+                  onClick={() => window.open(googleMapsUrl, "_blank")}
                 >
                   <Navigation size={14} />
                   <span>Cómo llegar</span>
@@ -209,7 +285,7 @@ export function StationDetail({
 
                 <motion.button
                   className={cn(
-                    "flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm transition-colors",
+                    "flex items-center justify-center rounded-xl px-3 py-2.5 text-sm transition-colors",
                     isBlocked
                       ? "bg-blue-500/15 text-blue-400"
                       : "bg-white/5 text-white/50 hover:bg-white/10 hover:text-white"
@@ -217,7 +293,9 @@ export function StationDetail({
                   whileTap={{ scale: 0.98 }}
                   onClick={() => setBlocked(!isBlocked)}
                 >
-                  <Lock size={14} />
+                  <span className="text-xs">
+                    {isBlocked ? "Bloqueado" : "Bloquear"}
+                  </span>
                 </motion.button>
               </div>
             </div>

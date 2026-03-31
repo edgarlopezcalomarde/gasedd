@@ -5,7 +5,6 @@ import {
   useMap,
   MapMarker,
   MarkerContent,
-  MarkerPopup,
 } from "@/components/ui/map"
 import { useSettingsStore, useMapStore, useStationStore } from "@/stores"
 import { useStationsByProvinces } from "@/hooks/useStationsByProvince"
@@ -355,7 +354,7 @@ function StationMarkersLayer({
 
   const fuelKey = getFuelTypeById(selectedFuel || "")?.key || DEFAULT_FUEL_KEY
   const zoom = viewport?.zoom ?? 6
-  const showMarkers = zoom >= 8
+  const showMarkers = zoom >= 6
 
   const visibleProvinceIds = useMemo(() => {
     if (!bounds) return []
@@ -458,8 +457,12 @@ function StationMarkersLayer({
           else if (price >= stats.p66) color = PRICE_COLORS.high as string
         }
 
-        const iconSize = isCheapest || isExpensive ? "h-6 w-6" : "h-4 w-4"
-        const borderSize = isCheapest || isExpensive ? "border-[2px]" : "border"
+        const markerSize = isCheapest || isExpensive ? "h-7 w-7" : "h-5 w-5"
+        const iconSize = isCheapest
+          ? "h-4 w-4"
+          : isExpensive
+            ? "h-4 w-4"
+            : "h-0 w-0"
 
         return (
           <MapMarker
@@ -469,35 +472,36 @@ function StationMarkersLayer({
             onClick={() => onStationClick?.(station)}
           >
             <MarkerContent>
-              <div
-                className={cn(
-                  "flex items-center justify-center rounded-full border-white shadow-lg",
-                  borderSize,
-                  iconSize
-                )}
-                style={{ backgroundColor: color }}
-              >
-                {isCheapest && (
-                  <Star className="h-3 w-3 fill-white text-white" />
-                )}
-                {isExpensive && (
-                  <AlertTriangle className="h-3 w-3 fill-white text-white" />
-                )}
+              <div className="relative flex items-center justify-center">
+                <div
+                  className={cn(
+                    "flex items-center justify-center rounded-full border-2 border-white shadow-lg",
+                    markerSize
+                  )}
+                  style={{ backgroundColor: color }}
+                >
+                  {isCheapest && (
+                    <Star className={cn("fill-white text-white", iconSize)} />
+                  )}
+                  {isExpensive && !isCheapest && (
+                    <AlertTriangle
+                      className={cn("fill-white text-white", iconSize)}
+                    />
+                  )}
+                </div>
+                <div
+                  className={cn(
+                    "absolute rounded bg-white px-1.5 py-0.5 text-[10px] font-bold whitespace-nowrap shadow",
+                    isCheapest || isExpensive
+                      ? "-top-8 left-1/2 -translate-x-1/2"
+                      : "-top-6 left-1/2 -translate-x-1/2"
+                  )}
+                  style={{ color }}
+                >
+                  {price !== null ? `${price.toFixed(2)}€` : "--"}
+                </div>
               </div>
             </MarkerContent>
-            <MarkerPopup>
-              <div className="min-w-[120px] p-2">
-                <div className="text-sm font-semibold text-gray-900">
-                  {station.Rótulo || "Gasolinera"}
-                </div>
-                <div className="text-lg font-bold text-green-600">
-                  {price !== null ? `${price.toFixed(3)} €/L` : "Sin precio"}
-                </div>
-                <div className="text-xs text-gray-500">
-                  {station.Municipio}, {station.Provincia}
-                </div>
-              </div>
-            </MarkerPopup>
           </MapMarker>
         )
       })}
