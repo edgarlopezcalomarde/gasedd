@@ -82,6 +82,9 @@ export function App() {
 
   const handleCloseStationDetail = () => {
     setSelectedStation(null)
+    if (activeTab === "stations") {
+      setActiveTab("map")
+    }
   }
 
   const renderContent = () => {
@@ -171,7 +174,7 @@ export function App() {
 
       <StationDetail
         station={selectedStation}
-        isOpen={activeTab === "stations" && !!selectedStation}
+        isOpen={!!selectedStation}
         onClose={handleCloseStationDetail}
       />
     </div>
