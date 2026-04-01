@@ -317,7 +317,7 @@ function StationMarkersLayer({
       const displayPriceStr =
         displayPrice !== null ? `${displayPrice.toFixed(3)} €/L` : "--"
       const icon =
-        isCheapest === 1 ? "⭐" : isExpensive === 1 ? "⚠️" : ""
+        isCheapest === 1 ? "★" : isExpensive === 1 ? "!" : ""
 
       features.push({
         type: "Feature",
@@ -510,6 +510,9 @@ function StationMarkersLayer({
           "icon-allow-overlap": true,
         },
         paint: {
+          "text-color": "rgba(255,255,255,1)",
+          "text-halo-color": "rgba(0,0,0,0.2)",
+          "text-halo-width": 0.5,
           "text-opacity": [
             "interpolate",
             ["linear"],

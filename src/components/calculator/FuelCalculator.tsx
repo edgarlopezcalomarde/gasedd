@@ -312,7 +312,17 @@ export function FuelCalculator({ className }: FuelCalculatorProps) {
   const { cheapestStationId } = useStationStore()
   const { selectedFuel, setSelectedFuel, tankCapacity } = useFilterStore()
   const { setDefaultFuel } = useSettingsStore()
-  const { viewStats } = useMapStore()
+  const { viewStats, bounds } = useMapStore()
+
+  const stationsInView = useMemo(() => {
+    if (!stations.length || !bounds) return stations
+    const [[minLng, minLat], [maxLng, maxLat]] = bounds
+    return stations.filter((s) => {
+      const lng = parseFloat(s["Longitud (WGS84)"]?.replace(",", ".") || "0")
+      const lat = parseFloat(s.Latitud?.replace(",", ".") || "0")
+      return lng >= minLng && lng <= maxLng && lat >= minLat && lat <= maxLat
+    })
+  }, [stations, bounds])
 
   const selectedFuelType = selectedFuel ? getFuelTypeById(selectedFuel) : null
   const fuelKey: FuelTypeKey = selectedFuelType?.key || DEFAULT_FUEL_KEY
@@ -385,7 +395,7 @@ export function FuelCalculator({ className }: FuelCalculatorProps) {
 
       <div className="space-y-4 rounded-2xl border border-white/10 bg-gradient-to-br from-white/8 to-white/3 p-4 shadow-lg">
         <StationSelector
-          stations={stations}
+          stations={stationsInView}
           selectedStation={selectedStation}
           onSelect={setSelectedStation}
           fuelKey={fuelKey}
