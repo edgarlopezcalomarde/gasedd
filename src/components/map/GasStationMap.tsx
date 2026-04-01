@@ -32,6 +32,7 @@ const SOURCE_ID = "gasedd-stations"
 const CIRCLES_LAYER = "gasedd-circles"
 const SPECIAL_LAYER = "gasedd-special"
 const LABELS_LAYER = "gasedd-labels"
+const ICONS_LAYER = "gasedd-icons"
 
 function getProvincesInBounds(
   bounds: [[number, number], [number, number]]
@@ -315,6 +316,8 @@ function StationMarkersLayer({
         displayPrice !== null ? `${displayPrice.toFixed(2)}€` : ""
       const displayPriceStr =
         displayPrice !== null ? `${displayPrice.toFixed(3)} €/L` : "--"
+      const icon =
+        isCheapest === 1 ? "⭐" : isExpensive === 1 ? "⚠️" : ""
 
       features.push({
         type: "Feature",
@@ -328,6 +331,7 @@ function StationMarkersLayer({
           displayPriceStr,
           rotulo: station.Rótulo || "Gasolinera",
           provincia: station.Provincia || "",
+          icon,
         },
       })
     }
@@ -478,6 +482,47 @@ function StationMarkersLayer({
       })
     }
 
+    if (!map.getLayer(ICONS_LAYER)) {
+      map.addLayer({
+        id: ICONS_LAYER,
+        type: "symbol",
+        source: SOURCE_ID,
+        minzoom: 6,
+        filter: ["!=", ["get", "icon"], ""],
+        layout: {
+          "text-field": ["get", "icon"],
+          "text-size": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            6,
+            14,
+            10,
+            18,
+            13,
+            22,
+            16,
+            28,
+          ],
+          "text-offset": [0, -2.2],
+          "text-anchor": "bottom",
+          "text-allow-overlap": true,
+          "icon-allow-overlap": true,
+        },
+        paint: {
+          "text-opacity": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            6,
+            0.8,
+            13,
+            1,
+          ],
+        },
+      })
+    }
+
     const handleMouseMove = (e: MapLibreGL.MapLayerMouseEvent) => {
       if (e.features && e.features.length > 0) {
         map.getCanvas().style.cursor = "pointer"
@@ -533,6 +578,7 @@ function StationMarkersLayer({
       map.off("click", SPECIAL_LAYER, handleClick)
 
       try {
+        if (map.getLayer(ICONS_LAYER)) map.removeLayer(ICONS_LAYER)
         if (map.getLayer(LABELS_LAYER)) map.removeLayer(LABELS_LAYER)
         if (map.getLayer(SPECIAL_LAYER)) map.removeLayer(SPECIAL_LAYER)
         if (map.getLayer(CIRCLES_LAYER)) map.removeLayer(CIRCLES_LAYER)
