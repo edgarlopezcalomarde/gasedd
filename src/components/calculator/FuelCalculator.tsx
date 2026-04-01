@@ -1,7 +1,12 @@
 import { motion } from "motion/react"
 import { cn } from "@/lib/utils"
 import { useFilterStore } from "@/stores/filterStore"
-import { useSettingsStore, useMapStore, useStationDataStore } from "@/stores"
+import {
+  useSettingsStore,
+  useMapStore,
+  useStationDataStore,
+  useStationStore,
+} from "@/stores"
 import type { EESSPrecio } from "@/api/types"
 import {
   getFuelPrice,
@@ -39,49 +44,52 @@ function StationSelector({
   fuelKey: FuelTypeKey
 }) {
   const [isOpen, setIsOpen] = useState(false)
-  const [buttonRect, setButtonRect] = useState<{
-    top: number
-    left: number
-    width: number
-  } | null>(null)
+  const [dropdownRect, setDropdownRect] = useState<DOMRect | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const portalRef = useRef<HTMLDivElement | null>(null)
 
   const sortedStations = useMemo(() => {
-    return [...stations].sort((a, b) => {
-      const priceA = getFuelPrice(
-        a as unknown as Record<string, string | undefined>,
-        fuelKey
-      )
-      const priceB = getFuelPrice(
-        b as unknown as Record<string, string | undefined>,
-        fuelKey
-      )
-      if (priceA === null && priceB === null) return 0
-      if (priceA === null) return 1
-      if (priceB === null) return -1
-      return priceA - priceB
-    })
+    return [...stations]
+      .filter((s) => {
+        const p = getFuelPrice(
+          s as unknown as Record<string, string | undefined>,
+          fuelKey
+        )
+        return p !== null
+      })
+      .sort((a, b) => {
+        const priceA = getFuelPrice(
+          a as unknown as Record<string, string | undefined>,
+          fuelKey
+        )!
+        const priceB = getFuelPrice(
+          b as unknown as Record<string, string | undefined>,
+          fuelKey
+        )!
+        return priceA - priceB
+      })
   }, [stations, fuelKey])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target as Node)
-      ) {
+      const target = event.target as Node
+      const insideContainer = containerRef.current?.contains(target)
+      const insidePortal = portalRef.current?.contains(target)
+      if (!insideContainer && !insidePortal) {
         setIsOpen(false)
       }
     }
-    document.addEventListener("mousedown", handleClickOutside)
-    return () => document.removeEventListener("mousedown", handleClickOutside)
-  }, [])
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside)
+      return () => document.removeEventListener("mousedown", handleClickOutside)
+    }
+  }, [isOpen])
 
   const handleToggle = () => {
     if (!isOpen && containerRef.current) {
-      const rect = containerRef.current.getBoundingClientRect()
-      setButtonRect({ top: rect.top, left: rect.left, width: rect.width })
+      setDropdownRect(containerRef.current.getBoundingClientRect())
     }
-    setIsOpen(!isOpen)
+    setIsOpen((v) => !v)
   }
 
   const selectedPrice = selectedStation
@@ -97,34 +105,42 @@ function StationSelector({
         onClick={handleToggle}
         className="flex w-full items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white transition-colors hover:border-white/20 hover:bg-white/10"
       >
-        <div className="flex flex-1 flex-col items-start">
-          <span className="text-xs text-white/50 uppercase tracking-wide">Gasolinera</span>
-          <span className="truncate font-medium">
+        <div className="flex min-w-0 flex-1 flex-col items-start">
+          <span className="text-xs uppercase tracking-wide text-white/50">
+            Gasolinera
+          </span>
+          <span className="w-full truncate font-medium">
             {selectedStation?.Rótulo || "Seleccionar gasolinera"}
           </span>
         </div>
         {selectedPrice !== null && (
-          <span className="whitespace-nowrap rounded-lg bg-green-500/15 px-2 py-1 text-xs font-bold text-green-400">
+          <span className="shrink-0 whitespace-nowrap rounded-lg bg-green-500/15 px-2 py-1 text-xs font-bold text-green-400">
             {selectedPrice.toFixed(3)}€
           </span>
         )}
-        <ChevronDown size={16} className="shrink-0 text-white/30" />
+        <ChevronDown
+          size={16}
+          className={cn(
+            "shrink-0 text-white/30 transition-transform",
+            isOpen && "rotate-180"
+          )}
+        />
       </button>
 
       {isOpen &&
-        buttonRect &&
+        dropdownRect &&
         createPortal(
-          <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            className="fixed z-[200] max-h-64 w-64 overflow-hidden rounded-xl border border-white/10 bg-black/90 shadow-2xl backdrop-blur-xl"
+          <div
+            ref={portalRef}
+            className="fixed z-[500] overflow-hidden rounded-xl border border-white/10 bg-black/95 shadow-2xl backdrop-blur-xl"
             style={{
-              top: buttonRect.top - 8,
-              left: buttonRect.left,
+              top: dropdownRect.bottom + 4,
+              left: dropdownRect.left,
+              width: dropdownRect.width,
+              maxHeight: "240px",
             }}
           >
-            <div className="max-h-48 overflow-y-auto p-1">
+            <div className="overflow-y-auto p-1" style={{ maxHeight: "240px" }}>
               {sortedStations.slice(0, 50).map((station, index) => {
                 const price = getFuelPrice(
                   station as unknown as Record<string, string | undefined>,
@@ -136,21 +152,20 @@ function StationSelector({
                 return (
                   <button
                     key={station.IDEESS}
-                    onClick={() => {
+                    onMouseDown={(e) => {
+                      e.preventDefault()
                       onSelect(station)
                       setIsOpen(false)
                     }}
                     className={cn(
-                      "flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors",
+                      "flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
                       isSelected
                         ? "bg-white/10 text-white"
                         : "text-white/60 hover:bg-white/5 hover:text-white"
                     )}
                   >
-                    <div className="flex flex-col items-start">
-                      <span className="max-w-[180px] truncate">
-                        {station.Rótulo}
-                      </span>
+                    <div className="flex min-w-0 flex-1 flex-col items-start">
+                      <span className="w-full truncate">{station.Rótulo}</span>
                       <span className="text-[10px] text-white/40">
                         {station.Localidad}, {station.Provincia}
                       </span>
@@ -158,8 +173,8 @@ function StationSelector({
                     {price !== null && (
                       <span
                         className={cn(
-                          "font-medium",
-                          isCheapest ? "text-green-400" : "text-white/60"
+                          "shrink-0 font-mono font-medium",
+                          isCheapest ? "text-green-400" : "text-white/50"
                         )}
                       >
                         {price.toFixed(3)}€
@@ -169,7 +184,7 @@ function StationSelector({
                 )
               })}
             </div>
-          </motion.div>,
+          </div>,
           document.body
         )}
     </div>
@@ -184,34 +199,32 @@ function FuelTypeSelector({
   onSelect: (fuel: FuelType) => void
 }) {
   const [isOpen, setIsOpen] = useState(false)
-  const [buttonRect, setButtonRect] = useState<{
-    top: number
-    left: number
-    width: number
-  } | null>(null)
+  const [dropdownRect, setDropdownRect] = useState<DOMRect | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const portalRef = useRef<HTMLDivElement | null>(null)
 
   const selectedType = selectedFuel ? getFuelTypeById(selectedFuel) : null
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target as Node)
-      ) {
+      const target = event.target as Node
+      const insideContainer = containerRef.current?.contains(target)
+      const insidePortal = portalRef.current?.contains(target)
+      if (!insideContainer && !insidePortal) {
         setIsOpen(false)
       }
     }
-    document.addEventListener("mousedown", handleClickOutside)
-    return () => document.removeEventListener("mousedown", handleClickOutside)
-  }, [])
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside)
+      return () => document.removeEventListener("mousedown", handleClickOutside)
+    }
+  }, [isOpen])
 
   const handleToggle = () => {
     if (!isOpen && containerRef.current) {
-      const rect = containerRef.current.getBoundingClientRect()
-      setButtonRect({ top: rect.top, left: rect.left, width: rect.width })
+      setDropdownRect(containerRef.current.getBoundingClientRect())
     }
-    setIsOpen(!isOpen)
+    setIsOpen((v) => !v)
   }
 
   return (
@@ -220,34 +233,44 @@ function FuelTypeSelector({
         onClick={handleToggle}
         className="flex w-full items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white transition-colors hover:border-white/20 hover:bg-white/10"
       >
-        <div className="flex flex-1 flex-col items-start">
-          <span className="text-xs text-white/50 uppercase tracking-wide">Combustible</span>
-          <span className="font-medium">{selectedType?.name || "Seleccionar combustible"}</span>
+        <div className="flex min-w-0 flex-1 flex-col items-start">
+          <span className="text-xs uppercase tracking-wide text-white/50">
+            Combustible
+          </span>
+          <span className="font-medium">
+            {selectedType?.name || "Seleccionar combustible"}
+          </span>
         </div>
-        <ChevronDown size={16} className="shrink-0 text-white/30" />
+        <ChevronDown
+          size={16}
+          className={cn(
+            "shrink-0 text-white/30 transition-transform",
+            isOpen && "rotate-180"
+          )}
+        />
       </button>
 
       {isOpen &&
-        buttonRect &&
+        dropdownRect &&
         createPortal(
-          <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            className="fixed z-[200] max-h-64 w-64 overflow-hidden rounded-xl border border-white/10 bg-black/90 shadow-2xl backdrop-blur-xl"
+          <div
+            ref={portalRef}
+            className="fixed z-[500] overflow-hidden rounded-xl border border-white/10 bg-black/95 shadow-2xl backdrop-blur-xl"
             style={{
-              top: buttonRect.top - 8,
-              left: buttonRect.left,
+              top: dropdownRect.bottom + 4,
+              left: dropdownRect.left,
+              width: dropdownRect.width,
+              maxHeight: "240px",
             }}
           >
-            <div className="max-h-48 overflow-y-auto p-1">
+            <div className="overflow-y-auto p-1" style={{ maxHeight: "240px" }}>
               {FUEL_TYPES.map((fuel) => {
                 const isSelected = selectedFuel === fuel.id
-
                 return (
                   <button
                     key={fuel.id}
-                    onClick={() => {
+                    onMouseDown={(e) => {
+                      e.preventDefault()
                       onSelect(fuel)
                       setIsOpen(false)
                     }}
@@ -264,11 +287,14 @@ function FuelTypeSelector({
                         {fuel.category}
                       </span>
                     </div>
+                    {isSelected && (
+                      <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-yellow-400" />
+                    )}
                   </button>
                 )
               })}
             </div>
-          </motion.div>,
+          </div>,
           document.body
         )}
     </div>
@@ -283,6 +309,7 @@ export function FuelCalculator({ className }: FuelCalculatorProps) {
   )
 
   const { stations } = useStationDataStore()
+  const { cheapestStationId } = useStationStore()
   const { selectedFuel, setSelectedFuel, tankCapacity } = useFilterStore()
   const { setDefaultFuel } = useSettingsStore()
   const { viewStats } = useMapStore()
@@ -290,27 +317,13 @@ export function FuelCalculator({ className }: FuelCalculatorProps) {
   const selectedFuelType = selectedFuel ? getFuelTypeById(selectedFuel) : null
   const fuelKey: FuelTypeKey = selectedFuelType?.key || DEFAULT_FUEL_KEY
 
+  // Use cheapest from the current viewport (computed in StationMarkersLayer)
   const cheapestInView = useMemo(() => {
-    if (!stations || stations.length === 0) return null
+    if (!cheapestStationId || !stations.length) return null
+    return stations.find((s) => s.IDEESS === cheapestStationId) ?? null
+  }, [cheapestStationId, stations])
 
-    const sorted = [...stations].sort((a, b) => {
-      const priceA = getFuelPrice(
-        a as unknown as Record<string, string | undefined>,
-        fuelKey
-      )
-      const priceB = getFuelPrice(
-        b as unknown as Record<string, string | undefined>,
-        fuelKey
-      )
-      if (priceA === null && priceB === null) return 0
-      if (priceA === null) return 1
-      if (priceB === null) return -1
-      return priceA - priceB
-    })
-
-    return sorted[0] || null
-  }, [stations, fuelKey])
-
+  // Auto-select cheapest in view if nothing is selected yet
   useEffect(() => {
     if (cheapestInView && !selectedStation) {
       setSelectedStation(cheapestInView)
@@ -324,35 +337,21 @@ export function FuelCalculator({ className }: FuelCalculatorProps) {
         fuelKey
       )
     }
-
-    if (viewStats?.mean) {
-      return viewStats.mean
-    }
-
-    return null
+    return viewStats?.mean ?? null
   }, [selectedStation, viewStats?.mean, fuelKey])
 
   const parsedValue = parseFloat(inputValue.replace(",", ".")) || 0
 
   const result = useMemo(() => {
-    if (!currentPrice || !parsedValue || parsedValue <= 0) {
+    if (!currentPrice || parsedValue <= 0) {
       return { liters: 0, euros: 0, exceeds: false }
     }
-
     if (mode === "euros") {
       const liters = parsedValue / currentPrice
-      return {
-        liters,
-        euros: parsedValue,
-        exceeds: liters > tankCapacity,
-      }
+      return { liters, euros: parsedValue, exceeds: liters > tankCapacity }
     } else {
       const euros = parsedValue * currentPrice
-      return {
-        liters: parsedValue,
-        euros,
-        exceeds: parsedValue > tankCapacity,
-      }
+      return { liters: parsedValue, euros, exceeds: parsedValue > tankCapacity }
     }
   }, [mode, parsedValue, currentPrice, tankCapacity])
 
@@ -364,6 +363,7 @@ export function FuelCalculator({ className }: FuelCalculatorProps) {
   const handleFuelSelect = (fuel: FuelType) => {
     setSelectedFuel(fuel.id)
     setDefaultFuel(fuel.id)
+    setSelectedStation(null) // reset so cheapest auto-selects for new fuel
   }
 
   return (
@@ -378,14 +378,14 @@ export function FuelCalculator({ className }: FuelCalculatorProps) {
           <Calculator size={20} className="text-yellow-400" />
         </div>
         <div>
-          <h3 className="text-lg font-bold text-white">Calculadora de combustible</h3>
+          <h3 className="text-lg font-bold text-white">Calculadora</h3>
           <p className="text-xs text-white/40">Calcula coste o cantidad</p>
         </div>
       </div>
 
-      <div className="space-y-4 rounded-2xl border border-white/10 bg-gradient-to-br from-white/8 to-white/3 p-5 shadow-lg backdrop-blur-sm">
+      <div className="space-y-4 rounded-2xl border border-white/10 bg-gradient-to-br from-white/8 to-white/3 p-4 shadow-lg">
         <StationSelector
-          stations={stations || []}
+          stations={stations}
           selectedStation={selectedStation}
           onSelect={setSelectedStation}
           fuelKey={fuelKey}
@@ -396,6 +396,7 @@ export function FuelCalculator({ className }: FuelCalculatorProps) {
           onSelect={handleFuelSelect}
         />
 
+        {/* Input */}
         <div className="flex items-end gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3">
           <button
             onClick={handleModeSwitch}
@@ -404,27 +405,29 @@ export function FuelCalculator({ className }: FuelCalculatorProps) {
           >
             <ArrowLeftRight size={16} />
           </button>
-          <div className="flex flex-1 flex-col gap-1">
-            <label className="text-xs font-medium text-yellow-400/80 uppercase tracking-wide">
-              {mode === "euros" ? "€" : "L"}
+          <div className="flex min-w-0 flex-1 flex-col gap-1 overflow-hidden">
+            <label className="text-xs font-medium uppercase tracking-wide text-yellow-400/80">
+              {mode === "euros" ? "Euros (€)" : "Litros (L)"}
             </label>
             <input
-              type="number"
+              type="text"
+              inputMode="decimal"
               value={inputValue}
               onChange={(e) => {
                 const val = e.target.value
-                if (val === "" || parseFloat(val) >= 0) {
+                if (val === "" || /^\d*[.,]?\d*$/.test(val)) {
                   setInputValue(val)
                 }
               }}
               placeholder="0"
-              className="bg-transparent text-3xl font-bold text-white outline-none placeholder:text-white/20"
+              className="w-full min-w-0 bg-transparent text-3xl font-bold text-white outline-none placeholder:text-white/20"
             />
           </div>
         </div>
 
-        <div className="flex items-center justify-between rounded-xl border border-white/10 bg-gradient-to-r from-white/10 to-white/5 px-4 py-3">
-          <div className="flex items-center gap-2 text-white/70">
+        {/* Result */}
+        <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-3">
+          <div className="flex items-center gap-2 text-white/60">
             <Fuel size={16} className="text-yellow-400" />
             <span className="text-xs font-medium uppercase tracking-wide">
               {mode === "euros" ? "Litros" : "Coste total"}
@@ -442,14 +445,21 @@ export function FuelCalculator({ className }: FuelCalculatorProps) {
           </span>
         </div>
 
-        {currentPrice && (
-          <div className="rounded-lg bg-white/5 px-3 py-2 text-center text-xs text-white/60">
+        {/* Price info */}
+        {currentPrice ? (
+          <div className="rounded-lg bg-white/5 px-3 py-2 text-center text-xs text-white/50">
             <span className="font-mono font-medium text-white">
               {currentPrice.toFixed(3)} €/L
             </span>
             {selectedStation && (
-              <span className="ml-2 text-white/40">• {selectedStation.Localidad}</span>
+              <span className="ml-2 text-white/30">
+                · {selectedStation.Localidad}
+              </span>
             )}
+          </div>
+        ) : (
+          <div className="text-center text-xs text-white/30">
+            Cargando precio...
           </div>
         )}
 
@@ -461,15 +471,9 @@ export function FuelCalculator({ className }: FuelCalculatorProps) {
           >
             <AlertTriangle size={16} className="shrink-0" />
             <span className="text-xs font-medium">
-              Excede capacidad de {tankCapacity}L
+              Excede capacidad del depósito ({tankCapacity}L)
             </span>
           </motion.div>
-        )}
-
-        {!currentPrice && (
-          <div className="text-center text-xs text-white/40">
-            Cargando precio...
-          </div>
         )}
       </div>
     </motion.div>
