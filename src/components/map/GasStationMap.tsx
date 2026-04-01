@@ -1,11 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react"
-import {
-  Map,
-  MapControls,
-  useMap,
-  MapMarker,
-  MarkerContent,
-} from "@/components/ui/map"
+import MapLibreGL from "maplibre-gl"
+import { Map, MapControls, useMap } from "@/components/ui/map"
 import {
   useSettingsStore,
   useMapStore,
@@ -29,9 +24,14 @@ import {
   findProvinceByCoords,
 } from "@/lib/constants"
 import type { EESSPrecio } from "@/api/types"
-import { Loader2, MapPin, Star, AlertTriangle } from "lucide-react"
+import { Loader2, MapPin, Fuel } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { RouteLayer } from "./RouteLayer"
+
+const SOURCE_ID = "gasedd-stations"
+const CIRCLES_LAYER = "gasedd-circles"
+const SPECIAL_LAYER = "gasedd-special"
+const LABELS_LAYER = "gasedd-labels"
 
 function getProvincesInBounds(
   bounds: [[number, number], [number, number]]
@@ -56,11 +56,7 @@ function getProvincesInBounds(
 function MapUpdater() {
   const { map, isLoaded } = useMap()
   const { setViewport, setBounds, isBlocked, selectedStationId } = useMapStore()
-  const { setCheapestStation, setExpensiveStation } = useStationStore()
   const { stations } = useStationDataStore()
-  const { selectedFuel } = useFilterStore()
-
-  const fuelKey = getFuelTypeById(selectedFuel || "")?.key || DEFAULT_FUEL_KEY
 
   const handleMoveEnd = () => {
     if (!map) return
@@ -93,24 +89,6 @@ function MapUpdater() {
       map.off("moveend", handleMoveEnd)
     }
   }, [map, isLoaded])
-
-  useEffect(() => {
-    if (!map || !isLoaded || stations.length === 0) return
-
-    const cheapest = findCheapestStation(stations, fuelKey)
-    const expensive = findExpensiveStation(stations, fuelKey)
-
-    setCheapestStation(cheapest?.IDEESS ?? null)
-    setExpensiveStation(expensive?.IDEESS ?? null)
-  }, [
-    stations,
-    fuelKey,
-    isLoaded,
-    map,
-    isBlocked,
-    setCheapestStation,
-    setExpensiveStation,
-  ])
 
   useEffect(() => {
     if (!map || !isLoaded || !selectedStationId) return
@@ -188,13 +166,20 @@ function LocationPermission({
   )
 }
 
+interface HoverInfo {
+  rotulo: string
+  provincia: string
+  priceStr: string
+  color: string
+}
+
 function StationMarkersLayer({
   onStationClick,
 }: {
   onStationClick?: (station: EESSPrecio) => void
 }) {
-  const { isLoaded, getBounds } = useMap()
-  const { bounds, setViewStats, viewport, setVisibleProvinces } = useMapStore()
+  const { isLoaded, getBounds, map } = useMap()
+  const { bounds, setViewStats, setVisibleProvinces } = useMapStore()
   const { selectedFuel } = useFilterStore()
   const { stations, isLoading } = useStationDataStore()
   const {
@@ -208,11 +193,12 @@ function StationMarkersLayer({
     [[number, number], [number, number]] | null
   >(null)
   const [initialLoadDone, setInitialLoadDone] = useState(false)
+  const [hoverInfo, setHoverInfo] = useState<HoverInfo | null>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const onStationClickRef = useRef(onStationClick)
+  onStationClickRef.current = onStationClick
 
   const fuelKey = getFuelTypeById(selectedFuel || "")?.key || DEFAULT_FUEL_KEY
-  const zoom = viewport?.zoom ?? 6
-  const showMarkers = zoom >= 6
 
   const visibleProvinceIds = useMemo(() => {
     if (!bounds) return []
@@ -274,7 +260,10 @@ function StationMarkersLayer({
   }, [stations, debouncedBounds, bounds])
 
   const stats = useMemo(() => {
-    if (!stationsInView || stationsInView.length === 0) return null
+    if (!stationsInView || stationsInView.length === 0) {
+      setViewStats(null)
+      return null
+    }
     const calculatedStats = calculatePriceStats(stationsInView, fuelKey)
     setViewStats(calculatedStats)
     return calculatedStats
@@ -292,9 +281,274 @@ function StationMarkersLayer({
 
   const hasSelectedFuel = !!selectedFuel
 
-  if (!isLoaded || !showMarkers) return null
+  // Build GeoJSON from stations in view — rendered by MapLibre on WebGL canvas
+  const geojsonData = useMemo((): GeoJSON.FeatureCollection => {
+    if (stationsInView.length === 0)
+      return { type: "FeatureCollection", features: [] }
 
-  const displayStations = stationsInView.slice(0, 200)
+    const features: GeoJSON.Feature<GeoJSON.Point>[] = []
+
+    for (const station of stationsInView) {
+      const lng = parseFloat(
+        station["Longitud (WGS84)"]?.replace(",", ".") || "0"
+      )
+      const lat = parseFloat(station.Latitud?.replace(",", ".") || "0")
+      if (isNaN(lng) || isNaN(lat)) continue
+
+      const price = getFuelPrice(
+        station as unknown as Record<string, string | undefined>,
+        fuelKey
+      )
+      const isCheapest = station.IDEESS === cheapestStationId ? 1 : 0
+      const isExpensive = station.IDEESS === expensiveStationId ? 1 : 0
+
+      let color: string = PRICE_COLORS.medium
+      if (price !== null && stats) {
+        if (price <= stats.p33) color = PRICE_COLORS.low as string
+        else if (price >= stats.p66) color = PRICE_COLORS.high as string
+      }
+
+      const displayPrice = hasSelectedFuel ? price : (stats?.mean ?? null)
+      const priceLabel =
+        displayPrice !== null ? `${displayPrice.toFixed(2)}€` : ""
+      const displayPriceStr =
+        displayPrice !== null ? `${displayPrice.toFixed(3)} €/L` : "--"
+
+      features.push({
+        type: "Feature",
+        geometry: { type: "Point", coordinates: [lng, lat] },
+        properties: {
+          id: station.IDEESS,
+          color,
+          isCheapest,
+          isExpensive,
+          priceLabel,
+          displayPriceStr,
+          rotulo: station.Rótulo || "Gasolinera",
+          provincia: station.Provincia || "",
+        },
+      })
+    }
+
+    return { type: "FeatureCollection", features }
+  }, [
+    stationsInView,
+    fuelKey,
+    stats,
+    cheapestStationId,
+    expensiveStationId,
+    hasSelectedFuel,
+  ])
+
+  // Initialize MapLibre source and layers (WebGL — no DOM overhead)
+  useEffect(() => {
+    if (!map || !isLoaded) return
+
+    if (!map.getSource(SOURCE_ID)) {
+      map.addSource(SOURCE_ID, {
+        type: "geojson",
+        data: { type: "FeatureCollection", features: [] },
+      })
+    }
+
+    if (!map.getLayer(CIRCLES_LAYER)) {
+      map.addLayer({
+        id: CIRCLES_LAYER,
+        type: "circle",
+        source: SOURCE_ID,
+        filter: [
+          "all",
+          ["==", ["get", "isCheapest"], 0],
+          ["==", ["get", "isExpensive"], 0],
+        ],
+        paint: {
+          "circle-color": ["get", "color"],
+          "circle-radius": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            6,
+            3,
+            10,
+            5,
+            13,
+            7,
+            16,
+            10,
+          ],
+          "circle-stroke-width": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            6,
+            0.5,
+            10,
+            1,
+            13,
+            2,
+          ],
+          "circle-stroke-color": "rgba(255,255,255,0.7)",
+          "circle-opacity": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            6,
+            0.75,
+            13,
+            0.95,
+          ],
+        },
+      })
+    }
+
+    if (!map.getLayer(SPECIAL_LAYER)) {
+      map.addLayer({
+        id: SPECIAL_LAYER,
+        type: "circle",
+        source: SOURCE_ID,
+        filter: [
+          "any",
+          ["==", ["get", "isCheapest"], 1],
+          ["==", ["get", "isExpensive"], 1],
+        ],
+        paint: {
+          "circle-color": ["get", "color"],
+          "circle-radius": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            6,
+            6,
+            10,
+            9,
+            13,
+            12,
+            16,
+            15,
+          ],
+          "circle-stroke-width": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            6,
+            1.5,
+            13,
+            3,
+          ],
+          "circle-stroke-color": "rgba(255,255,255,1)",
+          "circle-opacity": 1,
+        },
+      })
+    }
+
+    // Price labels — only visible at zoom >= 13
+    if (!map.getLayer(LABELS_LAYER)) {
+      map.addLayer({
+        id: LABELS_LAYER,
+        type: "symbol",
+        source: SOURCE_ID,
+        minzoom: 10,
+        filter: ["!=", ["get", "priceLabel"], ""],
+        layout: {
+          "text-field": ["get", "priceLabel"],
+          "text-size": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            10,
+            8,
+            13,
+            10,
+            16,
+            13,
+          ],
+          "text-font": ["Open Sans Bold", "Arial Unicode MS Bold"],
+          "text-offset": [0, -1.8],
+          "text-anchor": "bottom",
+          "text-allow-overlap": false,
+          "text-ignore-placement": false,
+        },
+        paint: {
+          "text-color": ["get", "color"],
+          "text-halo-color": "rgba(0,0,0,0.9)",
+          "text-halo-width": 1.5,
+        },
+      })
+    }
+
+    const handleMouseMove = (e: MapLibreGL.MapLayerMouseEvent) => {
+      if (e.features && e.features.length > 0) {
+        map.getCanvas().style.cursor = "pointer"
+        const props = e.features[0].properties as {
+          rotulo: string
+          provincia: string
+          displayPriceStr: string
+          color: string
+        }
+        setHoverInfo({
+          rotulo: props.rotulo || "Gasolinera",
+          provincia: props.provincia || "",
+          priceStr: props.displayPriceStr || "--",
+          color: props.color || PRICE_COLORS.medium,
+        })
+      }
+    }
+
+    const handleMouseLeave = () => {
+      map.getCanvas().style.cursor = ""
+      setHoverInfo(null)
+    }
+
+    const handleClick = (e: MapLibreGL.MapLayerMouseEvent) => {
+      if (e.features && e.features.length > 0) {
+        const id = (e.features[0].properties as { id?: string })?.id
+        if (id) {
+          const station = useStationDataStore
+            .getState()
+            .stations.find((s) => s.IDEESS === id)
+          if (station) onStationClickRef.current?.(station)
+        }
+      }
+    }
+
+    map.on("mousemove", CIRCLES_LAYER, handleMouseMove)
+    map.on("mousemove", SPECIAL_LAYER, handleMouseMove)
+    map.on("mouseleave", CIRCLES_LAYER, handleMouseLeave)
+    map.on("mouseleave", SPECIAL_LAYER, handleMouseLeave)
+    map.on("click", CIRCLES_LAYER, handleClick)
+    map.on("click", SPECIAL_LAYER, handleClick)
+
+    return () => {
+      map.off("mousemove", CIRCLES_LAYER, handleMouseMove)
+      map.off("mousemove", SPECIAL_LAYER, handleMouseMove)
+      map.off("mouseleave", CIRCLES_LAYER, handleMouseLeave)
+      map.off("mouseleave", SPECIAL_LAYER, handleMouseLeave)
+      map.off("click", CIRCLES_LAYER, handleClick)
+      map.off("click", SPECIAL_LAYER, handleClick)
+
+      try {
+        if (map.getLayer(LABELS_LAYER)) map.removeLayer(LABELS_LAYER)
+        if (map.getLayer(SPECIAL_LAYER)) map.removeLayer(SPECIAL_LAYER)
+        if (map.getLayer(CIRCLES_LAYER)) map.removeLayer(CIRCLES_LAYER)
+        if (map.getSource(SOURCE_ID)) map.removeSource(SOURCE_ID)
+      } catch {
+        // Map may be destroyed during cleanup
+      }
+
+      map.getCanvas().style.cursor = ""
+    }
+  }, [isLoaded, map])
+
+  // Push updated GeoJSON to the MapLibre source
+  useEffect(() => {
+    if (!map || !isLoaded) return
+    const source = map.getSource(SOURCE_ID) as
+      | MapLibreGL.GeoJSONSource
+      | undefined
+    source?.setData(geojsonData)
+  }, [map, isLoaded, geojsonData])
+
+  if (!isLoaded) return null
 
   return (
     <>
@@ -310,89 +564,30 @@ function StationMarkersLayer({
         </div>
       )}
 
-      {displayStations.map((station) => {
-        const lng = parseFloat(
-          station["Longitud (WGS84)"]?.replace(",", ".") || "0"
-        )
-        const lat = parseFloat(station.Latitud?.replace(",", ".") || "0")
-
-        if (isNaN(lng) || isNaN(lat)) return null
-
-        const price = getFuelPrice(
-          station as unknown as Record<string, string | undefined>,
-          fuelKey
-        )
-        const isCheapest = station.IDEESS === cheapestStationId
-        const isExpensive = station.IDEESS === expensiveStationId
-
-        let color: string = PRICE_COLORS.medium
-        if (price !== null && stats) {
-          if (price <= stats.p33) color = PRICE_COLORS.low as string
-          else if (price >= stats.p66) color = PRICE_COLORS.high as string
-        }
-
-        const markerSize = isCheapest || isExpensive ? "h-7 w-7" : "h-5 w-5"
-        const iconSize = isCheapest
-          ? "h-4 w-4"
-          : isExpensive
-            ? "h-4 w-4"
-            : "h-0 w-0"
-
-        const displayPrice = hasSelectedFuel ? price : (stats?.mean ?? null)
-
-        return (
-          <MapMarker
-            key={station.IDEESS}
-            longitude={lng}
-            latitude={lat}
-            onClick={() => onStationClick?.(station)}
-          >
-            <MarkerContent>
-              <div className="relative flex items-center justify-center">
-                <div
-                  className={cn(
-                    "flex items-center justify-center rounded-full border-2 border-white shadow-lg",
-                    markerSize
-                  )}
-                  style={{ backgroundColor: color }}
-                >
-                  {isCheapest && (
-                    <Star className={cn("fill-white text-white", iconSize)} />
-                  )}
-                  {isExpensive && !isCheapest && (
-                    <AlertTriangle
-                      className={cn("fill-white text-white", iconSize)}
-                    />
-                  )}
-                </div>
-                {hasSelectedFuel && displayPrice !== null && (
-                  <div
-                    className={cn(
-                      "absolute rounded bg-white px-1.5 py-0.5 text-[10px] font-bold whitespace-nowrap shadow",
-                      isCheapest || isExpensive
-                        ? "-top-8 left-1/2 -translate-x-1/2"
-                        : "-top-6 left-1/2 -translate-x-1/2"
-                    )}
-                    style={{ color }}
-                  >
-                    {displayPrice.toFixed(2)}€
-                  </div>
-                )}
-                {!hasSelectedFuel && stats?.mean && (
-                  <div
-                    className={cn(
-                      "absolute rounded bg-white px-1.5 py-0.5 text-[10px] font-bold whitespace-nowrap shadow",
-                      "-top-6 left-1/2 -translate-x-1/2"
-                    )}
-                  >
-                    {stats.mean.toFixed(2)}€*
-                  </div>
-                )}
-              </div>
-            </MarkerContent>
-          </MapMarker>
-        )
-      })}
+      {hoverInfo && (
+        <div className="pointer-events-none absolute bottom-36 left-1/2 z-30 -translate-x-1/2 rounded-xl border border-white/10 bg-black/90 p-3 shadow-2xl backdrop-blur-xl">
+          <div className="flex items-center gap-2">
+            <div
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
+              style={{ backgroundColor: `${hoverInfo.color}20` }}
+            >
+              <Fuel size={16} style={{ color: hoverInfo.color }} />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-white">
+                {hoverInfo.rotulo}
+              </p>
+              <p className="text-xs text-white/50">{hoverInfo.provincia}</p>
+            </div>
+            <div
+              className="ml-3 text-lg font-bold tabular-nums"
+              style={{ color: hoverInfo.color }}
+            >
+              {hoverInfo.priceStr}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }
