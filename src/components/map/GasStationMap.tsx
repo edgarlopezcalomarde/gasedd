@@ -199,7 +199,9 @@ function StationMarkersLayer({
   const [hoverInfo, setHoverInfo] = useState<HoverInfo | null>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const onStationClickRef = useRef(onStationClick)
-  onStationClickRef.current = onStationClick
+  useEffect(() => {
+    onStationClickRef.current = onStationClick
+  })
 
   const fuelKey = getFuelTypeById(selectedFuel || "")?.key || DEFAULT_FUEL_KEY
 
