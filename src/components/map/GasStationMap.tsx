@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/refs */
 import { useState, useEffect, useMemo, useRef } from "react"
 import MapLibreGL from "maplibre-gl"
 import { Map, MapControls, useMap } from "@/components/ui/map"
@@ -199,9 +200,7 @@ function StationMarkersLayer({
   const [hoverInfo, setHoverInfo] = useState<HoverInfo | null>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const onStationClickRef = useRef(onStationClick)
-  useEffect(() => {
-    onStationClickRef.current = onStationClick
-  })
+  onStationClickRef.current = onStationClick
 
   const fuelKey = getFuelTypeById(selectedFuel || "")?.key || DEFAULT_FUEL_KEY
 
