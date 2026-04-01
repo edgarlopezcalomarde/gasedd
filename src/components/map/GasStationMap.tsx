@@ -24,7 +24,7 @@ import {
   findProvinceByCoords,
 } from "@/lib/constants"
 import type { EESSPrecio } from "@/api/types"
-import { Loader2, MapPin, Fuel } from "lucide-react"
+import { Loader2, MapPin, Fuel, Star, AlertTriangle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { RouteLayer } from "./RouteLayer"
 
@@ -171,6 +171,8 @@ interface HoverInfo {
   provincia: string
   priceStr: string
   color: string
+  isCheapest: boolean
+  isExpensive: boolean
 }
 
 function StationMarkersLayer({
@@ -484,12 +486,16 @@ function StationMarkersLayer({
           provincia: string
           displayPriceStr: string
           color: string
+          isCheapest: number
+          isExpensive: number
         }
         setHoverInfo({
           rotulo: props.rotulo || "Gasolinera",
           provincia: props.provincia || "",
           priceStr: props.displayPriceStr || "--",
           color: props.color || PRICE_COLORS.medium,
+          isCheapest: props.isCheapest === 1,
+          isExpensive: props.isExpensive === 1,
         })
       }
     }
@@ -571,7 +577,13 @@ function StationMarkersLayer({
               className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
               style={{ backgroundColor: `${hoverInfo.color}20` }}
             >
-              <Fuel size={16} style={{ color: hoverInfo.color }} />
+              {hoverInfo.isCheapest ? (
+                <Star size={16} className="fill-yellow-400 text-yellow-400" />
+              ) : hoverInfo.isExpensive ? (
+                <AlertTriangle size={16} className="text-red-400" />
+              ) : (
+                <Fuel size={16} style={{ color: hoverInfo.color }} />
+              )}
             </div>
             <div>
               <p className="text-sm font-medium text-white">
