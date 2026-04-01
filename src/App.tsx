@@ -4,78 +4,21 @@ import { GasStationMap } from "@/components/map/GasStationMap"
 import { GasStationControlPanel } from "@/components/map/GasStationControlPanel"
 import { NavigationBar, DEFAULT_TABS } from "@/components/ui/navigation-bar"
 import { FiltersPanel } from "@/components/filters/FuelSelector"
+import { CacheSettings } from "@/components/filters/CacheSettings"
 import { StationDetail } from "@/components/station/StationDetail"
 import { FuelCalculator } from "@/components/calculator/FuelCalculator"
-import { useStationsByProvinces } from "@/hooks/useStationsByProvince"
-import { useMapStore } from "@/stores"
+import { useMapStore, useStationDataStore } from "@/stores"
 import { Settings as SettingsIcon, X } from "lucide-react"
-
-const ALL_PROVINCE_IDS = [
-  "01",
-  "02",
-  "03",
-  "04",
-  "05",
-  "06",
-  "07",
-  "08",
-  "09",
-  "10",
-  "11",
-  "12",
-  "13",
-  "14",
-  "15",
-  "16",
-  "17",
-  "18",
-  "19",
-  "20",
-  "21",
-  "22",
-  "23",
-  "24",
-  "25",
-  "26",
-  "27",
-  "28",
-  "29",
-  "30",
-  "31",
-  "32",
-  "33",
-  "34",
-  "35",
-  "36",
-  "37",
-  "38",
-  "39",
-  "40",
-  "41",
-  "42",
-  "43",
-  "44",
-  "45",
-  "46",
-  "47",
-  "48",
-  "49",
-  "50",
-  "51",
-  "52",
-]
 
 export function App() {
   const [activeTab, setActiveTab] = useState("map")
-  const stationsQuery = useStationsByProvinces(ALL_PROVINCE_IDS)
   const { selectedStationId, setSelectedStation } = useMapStore()
+  const { stations } = useStationDataStore()
 
   const selectedStation = useMemo(() => {
-    if (!selectedStationId || !stationsQuery.data) return null
-    return (
-      stationsQuery.data.find((s) => s.IDEESS === selectedStationId) || null
-    )
-  }, [selectedStationId, stationsQuery.data])
+    if (!selectedStationId) return null
+    return stations.find((s) => s.IDEESS === selectedStationId) || null
+  }, [selectedStationId, stations])
 
   const handleCloseStationDetail = () => {
     setSelectedStation(null)
@@ -100,6 +43,7 @@ export function App() {
               <h3 className="text-lg font-semibold text-white">Ajustes</h3>
             </div>
             <FiltersPanel />
+            <CacheSettings />
           </div>
         )
       default:
@@ -155,9 +99,7 @@ export function App() {
           setSelectedStation(id)
         }}
         onCenterOnStation={(stationId) => {
-          const station = stationsQuery.data?.find(
-            (s) => s.IDEESS === stationId
-          )
+          const station = stations.find((s) => s.IDEESS === stationId)
           if (station) {
             const lng = parseFloat(
               station["Longitud (WGS84)"]?.replace(",", ".") || "0"
