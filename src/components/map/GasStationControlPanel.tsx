@@ -1,7 +1,6 @@
 import { motion, AnimatePresence } from "motion/react"
 import { cn } from "@/lib/utils"
-import { useStationsByProvinces } from "@/hooks/useStationsByProvince"
-import { useStationStore, useMapStore } from "@/stores"
+import { useStationStore, useMapStore, useStationDataStore } from "@/stores"
 import {
   Fuel,
   TrendingDown,
@@ -10,61 +9,6 @@ import {
   Route,
   Star,
 } from "lucide-react"
-
-const ALL_PROVINCE_IDS = [
-  "01",
-  "02",
-  "03",
-  "04",
-  "05",
-  "06",
-  "07",
-  "08",
-  "09",
-  "10",
-  "11",
-  "12",
-  "13",
-  "14",
-  "15",
-  "16",
-  "17",
-  "18",
-  "19",
-  "20",
-  "21",
-  "22",
-  "23",
-  "24",
-  "25",
-  "26",
-  "27",
-  "28",
-  "29",
-  "30",
-  "31",
-  "32",
-  "33",
-  "34",
-  "35",
-  "36",
-  "37",
-  "38",
-  "39",
-  "40",
-  "41",
-  "42",
-  "43",
-  "44",
-  "45",
-  "46",
-  "47",
-  "48",
-  "49",
-  "50",
-  "51",
-  "52",
-]
 
 interface ControlPanelProps {
   className?: string
@@ -77,7 +21,7 @@ export function GasStationControlPanel({
   onOpenStationDetail,
   onCenterOnStation,
 }: ControlPanelProps) {
-  const stationsQuery = useStationsByProvinces(ALL_PROVINCE_IDS)
+  const { isLoading } = useStationDataStore()
   const { cheapestStationId, expensiveStationId } = useStationStore()
   const { viewStats, userLocation, setRouteToStationId } = useMapStore()
 
@@ -99,7 +43,7 @@ export function GasStationControlPanel({
     >
       <div className="overflow-hidden rounded-2xl border border-white/10 bg-black/65 shadow-2xl backdrop-blur-2xl">
         <AnimatePresence>
-          {stationsQuery.isLoading && (
+          {isLoading && (
             <motion.div
               className="flex items-center gap-2 border-b border-white/10 px-4 py-3"
               initial={{ height: 0, opacity: 0 }}

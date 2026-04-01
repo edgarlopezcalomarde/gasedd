@@ -1,9 +1,7 @@
 import { motion } from "motion/react"
 import { cn } from "@/lib/utils"
 import { useFilterStore } from "@/stores/filterStore"
-import { useSettingsStore } from "@/stores"
-import { useMapStore } from "@/stores"
-import { useStationsByProvinces } from "@/hooks/useStationsByProvince"
+import { useSettingsStore, useMapStore, useStationDataStore } from "@/stores"
 import type { EESSPrecio } from "@/api/types"
 import {
   getFuelPrice,
@@ -22,61 +20,6 @@ import {
 } from "lucide-react"
 import { useState, useMemo, useRef, useEffect } from "react"
 import { createPortal } from "react-dom"
-
-const ALL_PROVINCE_IDS = [
-  "01",
-  "02",
-  "03",
-  "04",
-  "05",
-  "06",
-  "07",
-  "08",
-  "09",
-  "10",
-  "11",
-  "12",
-  "13",
-  "14",
-  "15",
-  "16",
-  "17",
-  "18",
-  "19",
-  "20",
-  "21",
-  "22",
-  "23",
-  "24",
-  "25",
-  "26",
-  "27",
-  "28",
-  "29",
-  "30",
-  "31",
-  "32",
-  "33",
-  "34",
-  "35",
-  "36",
-  "37",
-  "38",
-  "39",
-  "40",
-  "41",
-  "42",
-  "43",
-  "44",
-  "45",
-  "46",
-  "47",
-  "48",
-  "49",
-  "50",
-  "51",
-  "52",
-]
 
 interface FuelCalculatorProps {
   className?: string
@@ -339,18 +282,18 @@ export function FuelCalculator({ className }: FuelCalculatorProps) {
     null
   )
 
+  const { stations } = useStationDataStore()
   const { selectedFuel, setSelectedFuel, tankCapacity } = useFilterStore()
   const { setDefaultFuel } = useSettingsStore()
   const { viewStats } = useMapStore()
 
-  const stationsQuery = useStationsByProvinces(ALL_PROVINCE_IDS)
   const selectedFuelType = selectedFuel ? getFuelTypeById(selectedFuel) : null
   const fuelKey: FuelTypeKey = selectedFuelType?.key || DEFAULT_FUEL_KEY
 
   const cheapestInView = useMemo(() => {
-    if (!stationsQuery.data || stationsQuery.data.length === 0) return null
+    if (!stations || stations.length === 0) return null
 
-    const sorted = [...stationsQuery.data].sort((a, b) => {
+    const sorted = [...stations].sort((a, b) => {
       const priceA = getFuelPrice(
         a as unknown as Record<string, string | undefined>,
         fuelKey
@@ -366,7 +309,7 @@ export function FuelCalculator({ className }: FuelCalculatorProps) {
     })
 
     return sorted[0] || null
-  }, [stationsQuery.data, fuelKey])
+  }, [stations, fuelKey])
 
   useMemo(() => {
     if (cheapestInView && !selectedStation) {
@@ -437,7 +380,7 @@ export function FuelCalculator({ className }: FuelCalculatorProps) {
 
       <div className="space-y-3 rounded-xl border border-white/10 bg-white/5 p-4">
         <StationSelector
-          stations={stationsQuery.data || []}
+          stations={stations || []}
           selectedStation={selectedStation}
           onSelect={setSelectedStation}
           fuelKey={fuelKey}

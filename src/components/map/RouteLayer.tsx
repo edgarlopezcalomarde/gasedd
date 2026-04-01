@@ -1,87 +1,29 @@
 import { useMemo } from "react"
 import { MapRoute } from "@/components/ui/map"
-import { useMapStore } from "@/stores"
-import { useStationsByProvinces } from "@/hooks/useStationsByProvince"
+import { useMapStore, useStationDataStore } from "@/stores"
 import { useFilterStore } from "@/stores/filterStore"
 import { getFuelTypeById, DEFAULT_FUEL_KEY } from "@/lib/fuel-types"
 import { findCheapestStation } from "@/lib/price-utils"
-
-const ALL_PROVINCE_IDS = [
-  "01",
-  "02",
-  "03",
-  "04",
-  "05",
-  "06",
-  "07",
-  "08",
-  "09",
-  "10",
-  "11",
-  "12",
-  "13",
-  "14",
-  "15",
-  "16",
-  "17",
-  "18",
-  "19",
-  "20",
-  "21",
-  "22",
-  "23",
-  "24",
-  "25",
-  "26",
-  "27",
-  "28",
-  "29",
-  "30",
-  "31",
-  "32",
-  "33",
-  "34",
-  "35",
-  "36",
-  "37",
-  "38",
-  "39",
-  "40",
-  "41",
-  "42",
-  "43",
-  "44",
-  "45",
-  "46",
-  "47",
-  "48",
-  "49",
-  "50",
-  "51",
-  "52",
-]
+import type { EESSPrecio } from "@/api/types"
 
 export function RouteLayer() {
-  const { userLocation, showRoute, routeToStationId, visibleProvinces } =
-    useMapStore()
+  const { userLocation, showRoute, routeToStationId } = useMapStore()
   const { selectedFuel } = useFilterStore()
-  const stationsQuery = useStationsByProvinces(
-    visibleProvinces.length > 0 ? visibleProvinces : ALL_PROVINCE_IDS
-  )
+  const { stations } = useStationDataStore()
 
   const fuelKey = getFuelTypeById(selectedFuel || "")?.key || DEFAULT_FUEL_KEY
 
   const routeCoordinates = useMemo(() => {
     if (!showRoute || !userLocation) return [] as [number, number][]
+    if (!stations || stations.length === 0) return [] as [number, number][]
 
-    let targetStation = null
+    let targetStation: EESSPrecio | null = null
 
-    if (routeToStationId && stationsQuery.data) {
-      targetStation = stationsQuery.data.find(
-        (s) => s.IDEESS === routeToStationId
-      )
-    } else if (stationsQuery.data && stationsQuery.data.length > 0) {
-      targetStation = findCheapestStation(stationsQuery.data, fuelKey)
+    if (routeToStationId) {
+      const found = stations.find((s) => s.IDEESS === routeToStationId)
+      targetStation = found || null
+    } else {
+      targetStation = findCheapestStation(stations, fuelKey)
     }
 
     if (!targetStation) return [] as [number, number][]
@@ -99,7 +41,7 @@ export function RouteLayer() {
       [userLocation.lng, userLocation.lat] as [number, number],
       [targetLng, targetLat] as [number, number],
     ]
-  }, [showRoute, userLocation, routeToStationId, stationsQuery.data, fuelKey])
+  }, [showRoute, userLocation, routeToStationId, stations, fuelKey])
 
   if (!showRoute || routeCoordinates.length < 2) return null
 
