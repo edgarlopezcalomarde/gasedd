@@ -95,20 +95,20 @@ function StationSelector({
     <div className="relative" ref={containerRef}>
       <button
         onClick={handleToggle}
-        className="flex w-full items-center justify-between rounded-lg bg-white/5 px-3 py-2 text-sm text-white transition-colors hover:bg-white/10"
+        className="flex w-full items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white transition-colors hover:border-white/20 hover:bg-white/10"
       >
-        <div className="flex flex-col items-start">
-          <span className="text-white/50">Gasolinera</span>
-          <span className="truncate">
-            {selectedStation?.Rótulo || "Seleccionar"}
+        <div className="flex flex-1 flex-col items-start">
+          <span className="text-xs text-white/50 uppercase tracking-wide">Gasolinera</span>
+          <span className="truncate font-medium">
+            {selectedStation?.Rótulo || "Seleccionar gasolinera"}
           </span>
         </div>
         {selectedPrice !== null && (
-          <span className="text-sm font-medium text-green-400">
+          <span className="whitespace-nowrap rounded-lg bg-green-500/15 px-2 py-1 text-xs font-bold text-green-400">
             {selectedPrice.toFixed(3)}€
           </span>
         )}
-        <ChevronDown size={16} className="text-white/50" />
+        <ChevronDown size={16} className="shrink-0 text-white/30" />
       </button>
 
       {isOpen &&
@@ -218,13 +218,13 @@ function FuelTypeSelector({
     <div className="relative" ref={containerRef}>
       <button
         onClick={handleToggle}
-        className="flex w-full items-center justify-between rounded-lg bg-white/5 px-3 py-2 text-sm text-white transition-colors hover:bg-white/10"
+        className="flex w-full items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white transition-colors hover:border-white/20 hover:bg-white/10"
       >
-        <div className="flex flex-col items-start">
-          <span className="text-white/50">Combustible</span>
-          <span>{selectedType?.name || "Seleccionar"}</span>
+        <div className="flex flex-1 flex-col items-start">
+          <span className="text-xs text-white/50 uppercase tracking-wide">Combustible</span>
+          <span className="font-medium">{selectedType?.name || "Seleccionar combustible"}</span>
         </div>
-        <ChevronDown size={16} className="text-white/50" />
+        <ChevronDown size={16} className="shrink-0 text-white/30" />
       </button>
 
       {isOpen &&
@@ -311,7 +311,7 @@ export function FuelCalculator({ className }: FuelCalculatorProps) {
     return sorted[0] || null
   }, [stations, fuelKey])
 
-  useMemo(() => {
+  useEffect(() => {
     if (cheapestInView && !selectedStation) {
       setSelectedStation(cheapestInView)
     }
@@ -373,12 +373,17 @@ export function FuelCalculator({ className }: FuelCalculatorProps) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.1 }}
     >
-      <div className="mb-4 flex items-center gap-2">
-        <Calculator size={18} className="text-white/50" />
-        <h3 className="text-lg font-semibold text-white">Calculadora</h3>
+      <div className="mb-5 flex items-center gap-3">
+        <div className="rounded-lg bg-yellow-500/15 p-2">
+          <Calculator size={20} className="text-yellow-400" />
+        </div>
+        <div>
+          <h3 className="text-lg font-bold text-white">Calculadora de combustible</h3>
+          <p className="text-xs text-white/40">Calcula coste o cantidad</p>
+        </div>
       </div>
 
-      <div className="space-y-3 rounded-xl border border-white/10 bg-white/5 p-4">
+      <div className="space-y-4 rounded-2xl border border-white/10 bg-gradient-to-br from-white/8 to-white/3 p-5 shadow-lg backdrop-blur-sm">
         <StationSelector
           stations={stations || []}
           selectedStation={selectedStation}
@@ -391,37 +396,46 @@ export function FuelCalculator({ className }: FuelCalculatorProps) {
           onSelect={handleFuelSelect}
         />
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-end gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3">
           <button
             onClick={handleModeSwitch}
-            className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/10 text-white/70 transition-colors hover:bg-white/20 hover:text-white"
+            className="mb-2 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-yellow-500/10 text-yellow-400 transition-colors hover:border-yellow-400/50 hover:bg-yellow-500/20"
+            title="Cambiar modo"
           >
             <ArrowLeftRight size={16} />
           </button>
-          <div className="flex flex-1 flex-col">
-            <label className="text-xs text-white/50">
-              {mode === "euros"
-                ? "Cantidad en euros (€)"
-                : "Cantidad en litros (L)"}
+          <div className="flex flex-1 flex-col gap-1">
+            <label className="text-xs font-medium text-yellow-400/80 uppercase tracking-wide">
+              {mode === "euros" ? "€" : "L"}
             </label>
             <input
               type="number"
               value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              placeholder={mode === "euros" ? "0.00" : "0"}
-              className="mt-1 bg-transparent text-2xl font-bold text-white outline-none placeholder:text-white/20"
+              onChange={(e) => {
+                const val = e.target.value
+                if (val === "" || parseFloat(val) >= 0) {
+                  setInputValue(val)
+                }
+              }}
+              placeholder="0"
+              className="bg-transparent text-3xl font-bold text-white outline-none placeholder:text-white/20"
             />
           </div>
         </div>
 
-        <div className="flex items-center justify-between rounded-lg bg-white/5 px-3 py-2">
-          <div className="flex items-center gap-2 text-white/50">
-            <Fuel size={14} />
-            <span className="text-sm">
-              {mode === "euros" ? "Litros obtenidos" : "Total a pagar"}
+        <div className="flex items-center justify-between rounded-xl border border-white/10 bg-gradient-to-r from-white/10 to-white/5 px-4 py-3">
+          <div className="flex items-center gap-2 text-white/70">
+            <Fuel size={16} className="text-yellow-400" />
+            <span className="text-xs font-medium uppercase tracking-wide">
+              {mode === "euros" ? "Litros" : "Coste total"}
             </span>
           </div>
-          <span className="font-mono text-lg font-bold text-white">
+          <span
+            className={cn(
+              "text-2xl font-bold tabular-nums",
+              mode === "euros" ? "text-blue-400" : "text-green-400"
+            )}
+          >
             {mode === "euros"
               ? `${result.liters.toFixed(2)} L`
               : `${result.euros.toFixed(2)} €`}
@@ -429,12 +443,12 @@ export function FuelCalculator({ className }: FuelCalculatorProps) {
         </div>
 
         {currentPrice && (
-          <div className="text-center text-xs text-white/40">
-            Precio: {currentPrice.toFixed(3)} €/L
+          <div className="rounded-lg bg-white/5 px-3 py-2 text-center text-xs text-white/60">
+            <span className="font-mono font-medium text-white">
+              {currentPrice.toFixed(3)} €/L
+            </span>
             {selectedStation && (
-              <span className="ml-1 text-green-400">
-                ({selectedStation.Rótulo})
-              </span>
+              <span className="ml-2 text-white/40">• {selectedStation.Localidad}</span>
             )}
           </div>
         )}
@@ -443,11 +457,11 @@ export function FuelCalculator({ className }: FuelCalculatorProps) {
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="flex items-center gap-2 rounded-lg bg-yellow-500/10 px-3 py-2 text-yellow-400"
+            className="flex items-center gap-2 rounded-xl border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-yellow-300"
           >
-            <AlertTriangle size={14} />
-            <span className="text-xs">
-              Excede la capacidad de tu depósito ({tankCapacity}L)
+            <AlertTriangle size={16} className="shrink-0" />
+            <span className="text-xs font-medium">
+              Excede capacidad de {tankCapacity}L
             </span>
           </motion.div>
         )}
